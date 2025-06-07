@@ -1,10 +1,12 @@
 #pragma once
 
-static const int IRACING_VER = 2;
+#include <stdbool.h>
 
-static const int IRACING_MAX_BUFFERS = 4;
-static const int IRACING_MAX_STRING = 32;
-static const int IRACING_MAX_DESC = 64;
+#define IRACING_VER  2
+
+#define IRACING_MAX_BUFFERS 4
+#define IRACING_MAX_STRING 32
+#define IRACING_MAX_DESC 64
 
 static const int IRACING_UNLIMITED_LAPS = 32767;
 static const float IRACING_UNLIMITED_TIME = 604800.0f;
@@ -74,7 +76,7 @@ typedef struct Header {
 	//byte curBuf;			// index of the most recently written buffer (0 to IRSDK_MAX_BUFS-1)
 	//byte pad1[3];			// 16 byte align
 	int padding1[2];		// (16 byte align)
-	VariableBuffer variable_buffers[IRACING_MAX_BUFFERS]; // buffers of data being written to
+	iracing_variable_buffer_t variable_buffers[IRACING_MAX_BUFFERS]; // buffers of data being written to
 } iracing_header_t;
 
 bool iracing_startup();
@@ -85,9 +87,9 @@ iracing_header_t iracing_get_header();
 iracing_session_info iracing_get_session_info();
 iracing_variable_header_t iracing_get_variable_header(int index);
 
-char iracing_get_char_variable(int index);
-bool iracing_get_bool_variable(int index);
-int iracing_get_int_variable(int index);
-int iracing_get_bitfield_variable(int index);
-float iracing_get_float_variable(int index);
-double iracing_get_double_variable(int index);
+char iracing_get_char_variable(int offset);
+bool iracing_get_bool_variable(int offset);
+int iracing_get_int_variable(int offset);
+int iracing_get_bitfield_variable(int offset);
+float iracing_get_float_variable(int offset);
+double iracing_get_double_variable(int offset);
