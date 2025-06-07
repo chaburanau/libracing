@@ -5,6 +5,7 @@
 static const int AC_IDENTIFIER = 1;
 static const int AC_SERVER_VERSION = 1;
 static const int AC_SERVER_PORT = 9996;
+static const char* AC_SERVER_IP = "127.0.0.1";
 
 typedef enum Operation {
 	AC_OPERATION_HANDSHAKE = 0,
@@ -90,7 +91,9 @@ typedef struct RealTimeLapInfo {
 	int time;				// Total Time ???
 } ac_rt_lap_info;
 
+bool ac_init();
 bool ac_handshake();
 bool ac_subscribe_update(void (*callback)(ac_rt_car_info));
 bool ac_subscribe_spot(void (*callback)(ac_rt_lap_info));
 bool ac_dismiss();
+bool ac_close();
