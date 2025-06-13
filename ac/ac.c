@@ -8,118 +8,116 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define HANDSHAKE_COUNT 3      // Number of handshake messages to send
-#define BUFFER_SIZE 1024       // Receive buffer size
-#define TIMEOUT_MILLISECONDS 2000  // Timeout for recv in ms
+static WSADATA *ac_wsa_data = NULL;
+static SOCKET ac_socket = INVALID_SOCKET;
+static struct sockaddr_in ac_server_address;
+static int ac_server_address_size = sizeof(ac_server_address);
 
-static bool initialized = false;
-static bool handshaked = false;
+static bool ac_initialized = false;
+static bool ac_handshaked = false;
 
-WSADATA *wsaData;
-SOCKET sock = INVALID_SOCKET;
-struct sockaddr_in server_addr;
-
-bool ac_init() {
-	if (initialized) {
-		return true;
+ac_status_t ac_init() {
+	if (ac_initialized) {
+		return AC_STATUS_ALREADY_INITIALIZED;
 	}
 
-	if (WSAStartup(MAKEWORD(2, 2), wsaData) != 0) {
-		fprintf(stderr, "WSAStartup failed. Error: %d\n", WSAGetLastError());
-		ac_close();
-		return false;
+	ZeroMemory(&ac_server_address, sizeof(ac_server_address));
+	ac_server_address.sin_family = AF_INET;
+	ac_server_address.sin_port = htons(AC_SERVER_PORT);
+
+	if (inet_pton(AF_INET, AC_SERVER_IP, &ac_server_address.sin_addr) != 1) {
+		fprintf(stderr, "AC: inet_pton failed. Error: %d\n", WSAGetLastError());
+		return AC_STATUS_SOCKET_ERROR;
 	}
 
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (sock == INVALID_SOCKET) {
-        fprintf(stderr, "socket() failed. Error: %d\n", WSAGetLastError());
-		ac_close();
-        return false;
+	if (WSAStartup(MAKEWORD(2, 2), ac_wsa_data) != 0) {
+		fprintf(stderr, "AC: WSAStartup failed. Error: %d\n", WSAGetLastError());
+		return AC_STATUS_SOCKET_ERROR;
 	}
 
-    ZeroMemory(&server_addr, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(AC_SERVER_PORT);
+	ac_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (ac_socket == INVALID_SOCKET) {
+        fprintf(stderr, "AC: socket failed. Error: %d\n", WSAGetLastError());
+        return AC_STATUS_SOCKET_ERROR;
+	}
 
-    if (inet_pton(AF_INET, AC_SERVER_IP, &server_addr.sin_addr) != 1) {
-        fprintf(stderr, "inet_pton() failed. Error: %d\n", WSAGetLastError());
-		ac_close();
-        return false;
-    }
-
-    DWORD timeout = TIMEOUT_MILLISECONDS;
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == SOCKET_ERROR) {
-        fprintf(stderr, "setsockopt(SO_RCVTIMEO) failed. Error: %d\n", WSAGetLastError());
-		ac_close();
-        return false;
-    }
-
-	initialized = true;
+	ac_initialized = true;
 	return true;
 }
 
-bool ac_handshake() {
-	if (!initialized) {
-		return false;
+ac_status_t ac_close() {
+	if (ac_socket != INVALID_SOCKET) {
+		closesocket(ac_socket);
+		ac_socket = INVALID_SOCKET;
 	}
 
-	if (handshaked) {
-		return true;
+	if (ac_wsa_data != NULL) {
+		WSACleanup();
+		ac_wsa_data = NULL;
 	}
 
-	ac_handshaker_request_t request = {
-		.identifier = AC_IDENTIFIER,
-		.version = AC_SERVER_VERSION,
-		.operation = AC_OPERATION_HANDSHAKE,
-	};
-	ac_handshaker_response_t response;
+	ac_handshaked = false;
+	ac_initialized = false;
+	return AC_STATUS_OK;
+}
 
-	int sent = sendto(sock, (const char*)&request, sizeof(request), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+ac_status_t ac_send(const ac_handshaker_request_t request) {
+	if (!ac_initialized) {
+		return AC_STATUS_NOT_INITIALIZED;
+	}
+
+	if (!ac_handshaked && request.operation != AC_OPERATION_HANDSHAKE) {
+		return AC_STATUS_NOT_HANDSHAKED;
+	}
+
+	const int sent = sendto(ac_socket, (const char*)&request, sizeof(ac_handshaker_request_t), 0, (struct sockaddr *)&ac_server_address, ac_server_address_size);
 	if (sent == SOCKET_ERROR) {
-		fprintf(stderr, "sendto() failed. Error: %d\n", WSAGetLastError());
-		ac_close();
-		return false;
+		fprintf(stderr, "AC: sendto failed. Error: %d\n", WSAGetLastError());
+		return AC_STATUS_SEND_ERROR;
 	}
 
-	int received = recvfrom(sock, (char*)&response, sizeof(response), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
-    if (received == SOCKET_ERROR) {
-        int err = WSAGetLastError();
-        if (err == WSAETIMEDOUT) {
-            fprintf(stderr, "Handshake: no ACK (timeout), retrying...\n");
-			ac_close();
-			return false;
-        } else {
-            fprintf(stderr, "recvfrom() failed. Error: %d\n", err);
-			ac_close();
-            return false;
-        }
-    }
-
-	handshaked = true;
-	return true;
-}
-
-bool ac_subscribe_update(void (*callback)(ac_rt_car_info)) {
-	return false;
-}
-
-bool ac_subscribe_spot(void (*callback)(ac_rt_lap_info)) {
-	return false;
-}
-
-bool ac_dismiss() {
-	return false;
-}
-
-void ac_close() {
-	if (sock != INVALID_SOCKET) {
-        closesocket(sock);
+	switch (request.operation) {
+		case AC_OPERATION_HANDSHAKE:
+			ac_handshaked = true;
+			break;
+		case AC_OPERATION_DISMISS:
+			ac_handshaked = false;
+			break;
 	}
 
-	if (wsaData != NULL) {
-        WSACleanup();
+	return AC_STATUS_OK;
+}
+
+ac_status_t ac_receive(char *buffer, const int buffer_size, ac_event_t *event, ac_event_type_t *event_type) {
+	const int received = recvfrom(ac_socket, buffer, buffer_size, 0, (struct sockaddr *)&ac_server_address, &ac_server_address_size);
+	if (received == SOCKET_ERROR) {
+		const int err = WSAGetLastError();
+		if (err == WSAETIMEDOUT) {
+			fprintf(stderr, "AC: recvfrom failed (timeout)\n");
+			return AC_STATUS_TIMEOUT_ERROR;
+		} else {
+			fprintf(stderr, "AC: recvfrom failed. Error: %d\n", err);
+			return AC_STATUS_RECEIVE_ERROR;
+		}
 	}
 
-	handshaked = false;
-	initialized = false;
+	switch (received) {
+		case sizeof(ac_handshaker_request_t):
+			*event_type = AC_EVENT_TYPE_HANDSHAKE;
+			event->handshake = (ac_handshaker_response_t *)buffer;
+			break;
+		case sizeof(ac_rt_car_info):
+			*event_type = AC_EVENT_TYPE_CAR_INFO;
+			event->car_info = (ac_rt_car_info *)buffer;
+			break;
+		case sizeof(ac_rt_lap_info):
+			*event_type = AC_EVENT_TYPE_LAP_INFO;
+			event->lap_info = (ac_rt_lap_info *)buffer;
+			break;
+		default:
+			fprintf(stderr, "AC: recvfrom received unexpected amount of data. Size: %d\n", received);
+			return AC_STATUS_RECEIVED_INVALID_DATA;
+	}
+
+	return AC_STATUS_OK;
 }

@@ -7,6 +7,20 @@ static const int AC_SERVER_VERSION = 1;
 static const int AC_SERVER_PORT = 9996;
 static const char* AC_SERVER_IP = "127.0.0.1";
 
+typedef enum Status {
+	AC_STATUS_OK = 0,
+	AC_STATUS_NOT_INITIALIZED = 1,
+	AC_STATUS_NOT_HANDSHAKED = 2,
+	AC_STATUS_ALREADY_INITIALIZED = 3,
+	AC_STATUS_ALREADY_HANDSHAKED = 4,
+	AC_STATUS_CALLBACK_DEFINED = 5,
+	AC_STATUS_SOCKET_ERROR = 6,
+	AC_STATUS_SEND_ERROR = 7,
+	AC_STATUS_RECEIVE_ERROR = 8,
+	AC_STATUS_TIMEOUT_ERROR = 9,
+	AC_STATUS_RECEIVED_INVALID_DATA = 10,
+} ac_status_t;
+
 typedef enum Operation {
 	AC_OPERATION_HANDSHAKE = 0,
 	AC_OPERATION_SUBSCRIBE_UPDATE = 1,
@@ -91,9 +105,20 @@ typedef struct RealTimeLapInfo {
 	int time;				// Total Time ???
 } ac_rt_lap_info;
 
-bool ac_init();
-bool ac_handshake();
-bool ac_subscribe_update(void (*callback)(ac_rt_car_info));
-bool ac_subscribe_spot(void (*callback)(ac_rt_lap_info));
-bool ac_dismiss();
-bool ac_close();
+typedef enum EventType {
+	AC_EVENT_TYPE_HANDSHAKE = 1,
+	AC_EVENT_TYPE_CAR_INFO = 2,
+	AC_EVENT_TYPE_LAP_INFO = 3,
+} ac_event_type_t;
+
+typedef union Event {
+	ac_handshaker_response_t *handshake;
+	ac_rt_car_info *car_info;
+	ac_rt_lap_info *lap_info;
+} ac_event_t;
+
+ac_status_t ac_init();	// ac_init inits udp socket
+ac_status_t ac_close();	// ac_close closes udp socket
+
+ac_status_t ac_send(ac_handshaker_request_t request);														// ac_send_handshake sends handshake message
+ac_status_t ac_receive(char *buffer, int buffer_size, ac_event_t *event, ac_event_type_t *event_type);		// ac_receive_event returns event from the socket
