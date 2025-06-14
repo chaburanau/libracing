@@ -47,62 +47,61 @@ typedef struct RealTimeCarInfo {
 	char identifier;
 	int size;
 
-	float speed_Kmh;	// Speed in km/h
-	float speed_Mph;	// Speed in mp/h
-	float speed_Ms;		// Speed in m/s
+	float speed_kmh;	// Speed in km/h
+	float speed_mph;	// Speed in mp/h
+	float speed_ms;		// Speed in m/s
 
-	bool isAbsEnabled;			// Is ABS enabled
-	bool isAbsInAction;			// Is ABS in action
-	bool isTcInAction;			// IS TC in action
-	bool isTcEnabled;			// Is TC enabled
-	bool isInPit;				// Is in pit
-	bool isEngineLimiterOn;		// Is Engine limiter on
+	bool is_abs_enabled;		// Is ABS enabled
+	bool is_abs_in_action;		// Is ABS in action
+	bool is_tc_in_action;		// IS TC in action
+	bool is_tc_enabled;			// Is TC enabled
+	bool is_in_pit;				// Is in pit
+	bool is_engine_limiter_on;	// Is Engine limiter on
 
+	float acc_g_vertical;		// Acceleration Vertical
+	float acc_g_horizontal;		// Acceleration Horizonal
+	float acc_g_frontal;		// Acceleration Frontal
 
-	float accG_vertical;	// Acceleration Vertical
-	float accG_horizontal;	// Acceleration Horizonal
-	float accG_frontal;		// Acceleration Frontal
-
-	int lapTime;	// Lap time
-	int lastLap;	// Last lap time
-	int bestLap;	// Best lap time
-	int lapCount;	// Lap count
+	int lap_time;	// Lap time
+	int last_lap;	// Last lap time
+	int best_lap;	// Best lap time
+	int lap_count;	// Lap count
 
 	float gas;			// Gas state
 	float brake;		// Brake state
 	float clutch;		// Clutch state
-	float engineRPM;	// Engine RPM
+	float engine_rpm;	// Engine RPM
 	float steer;		// Steering angle
 	int gear;			// Gear
-	float cgHeight;		// ????
+	float cg_height;	// ????
 
-	float wheelAngularSpeed[4];
-	float slipAngle[4];
-	float slipAngle_ContactPatch[4];
-	float slipRatio[4];
-	float tyreSlip[4];
-	float ndSlip[4];
+	float wheel_angular_speed[4];
+	float slip_angle[4];
+	float slip_angle_contact_patch[4];
+	float slip_ratio[4];
+	float tyre_slip[4];
+	float nd_slip[4];
 	float load[4];
-	float Dy[4];
-	float Mz[4];
-	float tyreDirtyLevel[4];
+	float dy[4];
+	float mz[4];
+	float tyre_dirty_level[4];
 
-	float camberRAD[4];
-	float tyreRadius[4];
-	float tyreLoadedRadius[4];
-	float suspensionHeight[4];
+	float camber_radius[4];
+	float tyre_radius[4];
+	float tyre_loaded_radius[4];
+	float suspension_height[4];
 
-	float carPositionNormalized;
-	float carSlope;
-	float carCoordinates[3];
+	float car_position_normalized;
+	float car_slope;
+	float car_coordinates[3];
 } ac_rt_car_info;
 
 typedef struct RealTimeLapInfo {
-	int carNumber;			// Car number
-	int lap;				// Lap the car is on
-	wchar_t driverName[50];	// Driver name of the car
-	wchar_t carName[50];	// Car name
-	int time;				// Total Time ???
+	int car_number;				// Car number
+	int lap;					// Lap the car is on
+	wchar_t driver_name[50];	// Driver name of the car
+	wchar_t car_name[50];		// Car name
+	int time;					// Total Time ???
 } ac_rt_lap_info;
 
 typedef enum EventType {
