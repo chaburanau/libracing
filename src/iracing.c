@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "iracing.h"
+#include "../include/iracing/iracing.h"
 
 static const char *i_shared_memory = NULL;
 static const iracing_header_t *i_header = NULL;

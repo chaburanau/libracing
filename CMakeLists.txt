@@ -3,11 +3,11 @@ project(libracing C)
 
 set(CMAKE_C_STANDARD 11)
 
-include_directories(ac)
-include_directories(iracing)
+include_directories(include)
+include_directories(src)
 
 add_executable(libracing
-        ac/ac.c
-        ac/ac.h
-        iracing/iracing.c
-        iracing/iracing.h)
+        include/ac/ac.h
+        include/iracing/iracing.h
+        src/ac.c
+        src/iracing.c)
