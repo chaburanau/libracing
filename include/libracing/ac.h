@@ -35,12 +35,12 @@ typedef struct HandshakerRequest {
 } ac_handshaker_request_t;
 
 typedef struct HandshakerResponse {
-	char car_name[50];		// Name of the car that player is driving
-	char driver_name[50];	// Name of the driver playing
-	int identifier;			// For now it is just 4242, this code will identify different status
-	int version;			// For now it is just 1, this code will idenitfy the version server is running
-	char track_name[50];	// Name of the track that is running
-	char track_config[50];	// Name of the track configuration that is running
+	wchar_t car_name[50];		// Name of the car that player is driving
+	wchar_t driver_name[50];	// Name of the driver playing
+	int identifier;				// For now, it is just 4242, this code will identify different status
+	int version;				// For now, it is just 1, this code will identify the version server is running
+	wchar_t track_name[50];		// Name of the track that is running
+	wchar_t track_config[50];	// Name of the track configuration that is running
 } ac_handshaker_response_t;
 
 typedef struct RealTimeCarInfo {
@@ -100,8 +100,8 @@ typedef struct RealTimeCarInfo {
 typedef struct RealTimeLapInfo {
 	int carNumber;			// Car number
 	int lap;				// Lap the car is on
-	char driverName[50];	// Driver name of the car
-	char carName[50];		// Car name
+	wchar_t driverName[50];	// Driver name of the car
+	wchar_t carName[50];	// Car name
 	int time;				// Total Time ???
 } ac_rt_lap_info;
 

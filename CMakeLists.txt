@@ -49,3 +49,6 @@ if (LIBRACING_BUILD_STATIC)
 endif()
 
 set_target_properties(libracing_shared PROPERTIES VERSION ${LIBRACING_VERSION} SOVERSION ${LIBRACING_VERSION_MAJOR})
+
+## Adding Examples
+add_subdirectory(examples)

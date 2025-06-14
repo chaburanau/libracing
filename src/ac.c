@@ -1,25 +1,45 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
 
 #include "../include/libracing/ac.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
-static WSADATA *ac_wsa_data = NULL;
+static WSADATA ac_wsa_data;
 static SOCKET ac_socket = INVALID_SOCKET;
 static struct sockaddr_in ac_server_address;
 static int ac_server_address_size = sizeof(ac_server_address);
 
-static bool ac_initialized = false;
+static bool ac_wsa_initialized = false;
+static bool ac_socket_initialized = false;
 static bool ac_handshaked = false;
 
 ac_status_t ac_init() {
-	if (ac_initialized) {
+	if (ac_wsa_initialized) {
 		return AC_STATUS_ALREADY_INITIALIZED;
 	}
+
+	if (ac_socket_initialized) {
+		return AC_STATUS_ALREADY_INITIALIZED;
+	}
+
+	const int wsa_startup_status = WSAStartup(MAKEWORD(2, 2), &ac_wsa_data);
+	if (wsa_startup_status != 0) {
+		fprintf(stderr, "AC: WSAStartup failed. Error: %d; %d\n", WSAGetLastError(), wsa_startup_status);
+		return AC_STATUS_SOCKET_ERROR;
+	}
+
+	ac_wsa_initialized = true;
+
+	ac_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (ac_socket == INVALID_SOCKET) {
+		fprintf(stderr, "AC: socket failed. Error: %d\n", WSAGetLastError());
+		return AC_STATUS_SOCKET_ERROR;
+	}
+
+	ac_socket_initialized = true;
 
 	ZeroMemory(&ac_server_address, sizeof(ac_server_address));
 	ac_server_address.sin_family = AF_INET;
@@ -30,39 +50,28 @@ ac_status_t ac_init() {
 		return AC_STATUS_SOCKET_ERROR;
 	}
 
-	if (WSAStartup(MAKEWORD(2, 2), ac_wsa_data) != 0) {
-		fprintf(stderr, "AC: WSAStartup failed. Error: %d\n", WSAGetLastError());
-		return AC_STATUS_SOCKET_ERROR;
-	}
-
-	ac_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (ac_socket == INVALID_SOCKET) {
-        fprintf(stderr, "AC: socket failed. Error: %d\n", WSAGetLastError());
-        return AC_STATUS_SOCKET_ERROR;
-	}
-
-	ac_initialized = true;
-	return true;
+	return AC_STATUS_OK;
 }
 
 ac_status_t ac_close() {
-	if (ac_socket != INVALID_SOCKET) {
+	if (ac_socket_initialized) {
 		closesocket(ac_socket);
 		ac_socket = INVALID_SOCKET;
+		ac_socket_initialized = false;
 	}
 
-	if (ac_wsa_data != NULL) {
+	if (ac_wsa_initialized) {
 		WSACleanup();
-		ac_wsa_data = NULL;
+		ZeroMemory(&ac_wsa_data, sizeof(ac_wsa_data));
+		ac_wsa_initialized = false;
 	}
 
 	ac_handshaked = false;
-	ac_initialized = false;
 	return AC_STATUS_OK;
 }
 
 ac_status_t ac_send(const ac_handshaker_request_t request) {
-	if (!ac_initialized) {
+	if (!ac_socket_initialized) {
 		return AC_STATUS_NOT_INITIALIZED;
 	}
 
@@ -102,7 +111,7 @@ ac_status_t ac_receive(char *buffer, const int buffer_size, ac_event_t *event, a
 	}
 
 	switch (received) {
-		case sizeof(ac_handshaker_request_t):
+		case sizeof(ac_handshaker_response_t):
 			*event_type = AC_EVENT_TYPE_HANDSHAKE;
 			event->handshake = (ac_handshaker_response_t *)buffer;
 			break;
