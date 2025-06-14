@@ -34,6 +34,7 @@ typedef struct HandshakerRequest {
 	int operation;		// Type of the operation client wants to perform. See `ac_operation_t`
 } ac_handshaker_request_t;
 
+#pragma pack(push, 1)
 typedef struct HandshakerResponse {
 	wchar_t car_name[50];		// Name of the car that player is driving
 	wchar_t driver_name[50];	// Name of the driver playing
@@ -44,7 +45,7 @@ typedef struct HandshakerResponse {
 } ac_handshaker_response_t;
 
 typedef struct RealTimeCarInfo {
-	char identifier;
+	char identifier[4];
 	int size;
 
 	float speed_kmh;	// Speed in km/h
@@ -57,6 +58,9 @@ typedef struct RealTimeCarInfo {
 	bool is_tc_enabled;			// Is TC enabled
 	bool is_in_pit;				// Is in pit
 	bool is_engine_limiter_on;	// Is Engine limiter on
+
+	bool _unknown_1; // Unknown byte 1
+	bool _unknown_2; // Unknown byte 2
 
 	float acc_g_vertical;		// Acceleration Vertical
 	float acc_g_horizontal;		// Acceleration Horizonal
@@ -101,8 +105,9 @@ typedef struct RealTimeLapInfo {
 	int lap;					// Lap the car is on
 	wchar_t driver_name[50];	// Driver name of the car
 	wchar_t car_name[50];		// Car name
-	int time;					// Total Time ???
+	int time;					// Total Time
 } ac_rt_lap_info;
+#pragma pack(pop)
 
 typedef enum EventType {
 	AC_EVENT_TYPE_HANDSHAKE = 1,

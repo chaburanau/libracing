@@ -17,13 +17,8 @@ static bool ac_socket_initialized = false;
 static bool ac_handshaked = false;
 
 ac_status_t ac_init() {
-	if (ac_wsa_initialized) {
-		return AC_STATUS_ALREADY_INITIALIZED;
-	}
-
-	if (ac_socket_initialized) {
-		return AC_STATUS_ALREADY_INITIALIZED;
-	}
+	if (ac_wsa_initialized) return AC_STATUS_ALREADY_INITIALIZED;
+	if (ac_socket_initialized) return AC_STATUS_ALREADY_INITIALIZED;
 
 	const int wsa_startup_status = WSAStartup(MAKEWORD(2, 2), &ac_wsa_data);
 	if (wsa_startup_status != 0) {
@@ -71,13 +66,9 @@ ac_status_t ac_close() {
 }
 
 ac_status_t ac_send(const ac_handshaker_request_t request) {
-	if (!ac_socket_initialized) {
-		return AC_STATUS_NOT_INITIALIZED;
-	}
-
-	if (!ac_handshaked && request.operation != AC_OPERATION_HANDSHAKE) {
-		return AC_STATUS_NOT_HANDSHAKED;
-	}
+	if (!ac_wsa_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!ac_socket_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!ac_handshaked && request.operation != AC_OPERATION_HANDSHAKE) return AC_STATUS_NOT_HANDSHAKED;
 
 	const int sent = sendto(ac_socket, (const char*)&request, sizeof(ac_handshaker_request_t), 0, (struct sockaddr *)&ac_server_address, ac_server_address_size);
 	if (sent == SOCKET_ERROR) {
@@ -98,6 +89,10 @@ ac_status_t ac_send(const ac_handshaker_request_t request) {
 }
 
 ac_status_t ac_receive(char *buffer, const int buffer_size, ac_event_t *event, ac_event_type_t *event_type) {
+	if (!ac_wsa_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!ac_socket_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!ac_handshaked) return AC_STATUS_NOT_HANDSHAKED;
+
 	const int received = recvfrom(ac_socket, buffer, buffer_size, 0, (struct sockaddr *)&ac_server_address, &ac_server_address_size);
 	if (received == SOCKET_ERROR) {
 		const int err = WSAGetLastError();
