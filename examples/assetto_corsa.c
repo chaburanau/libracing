@@ -6,15 +6,14 @@
 
 #include "libracing/ac.h"
 
-void receive_data() {
-    const int buffer_length = 408;
-    char *buffer = malloc(buffer_length);
-    memset(buffer, 0, buffer_length);
+void receive_data(ac_client_t *client) {
+    char *buffer = malloc(AC_BUFFER_SIZE);
+    memset(buffer, 0, AC_BUFFER_SIZE);
 
     ac_event_t event;
     ac_event_type_t event_type;
 
-    const ac_status_t received_status = ac_receive(buffer, buffer_length, &event, &event_type);
+    const ac_status_t received_status = ac_client_receive(client, buffer, &event, &event_type);
     if (received_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_receive() failed with error %d\n", received_status);
         return;
@@ -31,14 +30,14 @@ void receive_data() {
             fprintf(stdout, "\n");
             break;
         case AC_EVENT_TYPE_CAR_INFO:
-            // fprintf(stdout, "\tSpeed: %f\n", event.car_info->speed_kmh);
-            // fprintf(stdout, "\tGas: %f\n", event.car_info->gas);
-            // fprintf(stdout, "\tBreak: %f\n", event.car_info->brake);
-            // fprintf(stdout, "\tClutch: %f\n", event.car_info->clutch);
-            // fprintf(stdout, "\tRPM: %f\n", event.car_info->engine_rpm);
-            // fprintf(stdout, "\tSteer: %f\n", event.car_info->steer);
-            // fprintf(stdout, "\tGear: %d\n", event.car_info->gear);
-            // fprintf(stdout, "\n");
+            fprintf(stdout, "\tSpeed: %f\n", event.car_info->speed_kmh);
+            fprintf(stdout, "\tGas: %f\n", event.car_info->gas);
+            fprintf(stdout, "\tBreak: %f\n", event.car_info->brake);
+            fprintf(stdout, "\tClutch: %f\n", event.car_info->clutch);
+            fprintf(stdout, "\tRPM: %f\n", event.car_info->engine_rpm);
+            fprintf(stdout, "\tSteer: %f\n", event.car_info->steer);
+            fprintf(stdout, "\tGear: %d\n", event.car_info->gear);
+            fprintf(stdout, "\n");
             break;
         case AC_EVENT_TYPE_LAP_INFO:
             fprintf(stdout, "\tCarNumber: %d\n", event.lap_info->car_number);
@@ -59,71 +58,74 @@ void receive_data() {
 int main(int argc, char *argv[]) {
     setlocale(LC_ALL, "en_US.UTF-8");
 
-    const ac_handshaker_request_t handshake_request = {
-        .identifier = AC_IDENTIFIER,
-        .version = AC_SERVER_VERSION,
-        .operation = AC_OPERATION_HANDSHAKE,
-    };
+    ac_client_t updater = ac_new_client();
+    ac_client_t spotter = ac_new_client();
 
-    const ac_handshaker_request_t dismiss_request = {
-        .identifier = AC_IDENTIFIER,
-        .version = AC_SERVER_VERSION,
-        .operation = AC_OPERATION_DISMISS,
-    };
-
-    const ac_handshaker_request_t subscribe_car_request = {
-        .identifier = AC_IDENTIFIER,
-        .version = AC_SERVER_VERSION,
-        .operation = AC_OPERATION_SUBSCRIBE_UPDATE,
-    };
-
-    const ac_handshaker_request_t subscribe_lap_request = {
-        .identifier = AC_IDENTIFIER,
-        .version = AC_SERVER_VERSION,
-        .operation = AC_OPERATION_SUBSCRIBE_SPOT,
-    };
-
-    const ac_status_t init_status = ac_init();
-    if (init_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_init() failed with error %d\n", init_status);
+    const ac_status_t init_updater_status = ac_client_init(&updater);
+    if (init_updater_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_init for updater failed with error %d\n", init_updater_status);
         return -1;
     }
 
-    const ac_status_t handshake_request_status = ac_send(handshake_request);
-    if (handshake_request_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_send(handshake) failed with error %d\n", handshake_request_status);
+    const ac_status_t init_spotter_status = ac_client_init(&spotter);
+    if (init_spotter_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_init for spotter failed with error %d\n", init_spotter_status);
         return -1;
     }
 
-    receive_data();
+    const ac_status_t handshake_updater_status = ac_client_handshake(&updater);
+    if (handshake_updater_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_handshake for updater failed with error %d\n", handshake_updater_status);
+        return -1;
+    }
 
-    const ac_status_t subscribe_update_status = ac_send(subscribe_car_request);
+    const ac_status_t handshake_spotter_status = ac_client_handshake(&spotter);
+    if (handshake_spotter_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_handshake for spotter failed with error %d\n", handshake_spotter_status);
+        return -1;
+    }
+
+    receive_data(&updater);
+    receive_data(&spotter);
+
+    const ac_status_t subscribe_update_status = ac_client_subscribe_update(&updater);
     if (subscribe_update_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_send(subscribe_update) failed with error %d\n", subscribe_update_status);
+        fprintf(stderr, "ac_client_subscribe_update failed with error %d\n", subscribe_update_status);
         return -1;
     }
 
-    receive_data();
-
-    const ac_status_t subscribe_spot_status = ac_send(subscribe_lap_request);
+    const ac_status_t subscribe_spot_status = ac_client_subscribe_spot(&spotter);
     if (subscribe_spot_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_send(subscribe_spot) failed with error %d\n", subscribe_spot_status);
+        fprintf(stderr, "ac_client_subscribe_spot failed with error %d\n", subscribe_spot_status);
         return -1;
     }
 
-    for (int i = 0; i < 100000000; i++) {
-        receive_data();
+    for (int i = 0; i < 10000; i++) {
+        receive_data(&updater);
+        receive_data(&spotter);
     }
 
-    const ac_status_t dismiss_request_status = ac_send(dismiss_request);
-    if (dismiss_request_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_send(dismiss) failed with error %d\n", dismiss_request_status);
+    const ac_status_t dismiss_updater_status = ac_client_dismiss(&updater);
+    if (dismiss_updater_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_dismiss for updater failed with error %d\n", dismiss_updater_status);
         return -1;
     }
 
-    const ac_status_t close_status = ac_close();
-    if (close_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_close() failed with error %d\n", close_status);
+    const ac_status_t dismiss_spotter_status = ac_client_dismiss(&spotter);
+    if (dismiss_spotter_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_dismiss for spotter failed with error %d\n", dismiss_spotter_status);
+        return -1;
+    }
+
+    const ac_status_t close_updater_status = ac_client_close(&updater);
+    if (close_updater_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_close for updater failed with error %d\n", close_updater_status);
+        return -1;
+    }
+
+    const ac_status_t close_spotter_status = ac_client_close(&spotter);
+    if (close_spotter_status != AC_STATUS_OK) {
+        fprintf(stderr, "ac_client_close for spotter failed with error %d\n", close_spotter_status);
         return -1;
     }
 

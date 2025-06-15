@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdbool.h>
+#include <winsock2.h>
+
+#define AC_BUFFER_SIZE 408
 
 static const int AC_IDENTIFIER = 1;
 static const int AC_SERVER_VERSION = 1;
@@ -19,6 +22,7 @@ typedef enum Status {
 	AC_STATUS_RECEIVE_ERROR = 8,
 	AC_STATUS_TIMEOUT_ERROR = 9,
 	AC_STATUS_RECEIVED_INVALID_DATA = 10,
+	AC_STATUS_NOT_DISMISSED = 11,
 } ac_status_t;
 
 typedef enum Operation {
@@ -28,22 +32,24 @@ typedef enum Operation {
 	AC_OPERATION_DISMISS = 3,
 } ac_operation_t;
 
-typedef struct HandshakerRequest {
-	int identifier;		// Client's device identifier. See `AC_IDENTIFIER`
-	int version;		// Version of the API. See `AC_SERVER_VERSION`
-	int operation;		// Type of the operation client wants to perform. See `ac_operation_t`
-} ac_handshaker_request_t;
+#pragma pack(1)
+typedef struct Request {
+	int identifier;				// Client's device identifier. See `AC_IDENTIFIER`
+	int version;				// Version of the API. See `AC_SERVER_VERSION`
+	ac_operation_t operation;	// Type of the operation the client wants to perform. See `ac_operation_t`
+} ac_request_t;
 
-#pragma pack(push, 1)
-typedef struct HandshakerResponse {
+#pragma pack(1)
+typedef struct Response {
 	wchar_t car_name[50];		// Name of the car that player is driving
 	wchar_t driver_name[50];	// Name of the driver playing
-	int identifier;				// For now, it is just 4242, this code will identify different status
-	int version;				// For now, it is just 1, this code will identify the version server is running
+	int identifier;				// For now, it is just 4242; this code will identify different status
+	int version;				// For now, it is just 1; this code will identify the version server is running
 	wchar_t track_name[50];		// Name of the track that is running
 	wchar_t track_config[50];	// Name of the track configuration that is running
-} ac_handshaker_response_t;
+} ac_response_t;
 
+#pragma pack(1)
 typedef struct RealTimeCarInfo {
 	char identifier[4];
 	int size;
@@ -100,6 +106,7 @@ typedef struct RealTimeCarInfo {
 	float car_coordinates[3];
 } ac_rt_car_info;
 
+#pragma pack(1)
 typedef struct RealTimeLapInfo {
 	int car_number;				// Car number
 	int lap;					// Lap the car is on
@@ -107,7 +114,6 @@ typedef struct RealTimeLapInfo {
 	wchar_t car_name[50];		// Car name
 	int time;					// Total Time
 } ac_rt_lap_info;
-#pragma pack(pop)
 
 typedef enum EventType {
 	AC_EVENT_TYPE_HANDSHAKE = 1,
@@ -116,13 +122,25 @@ typedef enum EventType {
 } ac_event_type_t;
 
 typedef union Event {
-	ac_handshaker_response_t *handshake;
+	ac_response_t *handshake;
 	ac_rt_car_info *car_info;
 	ac_rt_lap_info *lap_info;
 } ac_event_t;
 
-ac_status_t ac_init();	// ac_init inits udp socket
-ac_status_t ac_close();	// ac_close closes udp socket
+typedef struct Client {
+	bool _socket_initialized;
+	bool _address_initialized;
+	bool _handshake_initialized;
 
-ac_status_t ac_send(ac_handshaker_request_t request);														// ac_send_handshake sends handshake message
-ac_status_t ac_receive(char *buffer, int buffer_size, ac_event_t *event, ac_event_type_t *event_type);		// ac_receive_event returns event from the socket
+	SOCKET _socket;
+	struct sockaddr_in _server_address;
+} ac_client_t;
+
+ac_client_t ac_new_client();
+ac_status_t ac_client_init(ac_client_t *client);
+ac_status_t ac_client_close(ac_client_t *client);
+ac_status_t ac_client_handshake(ac_client_t *client);
+ac_status_t ac_client_subscribe_update(ac_client_t *client);
+ac_status_t ac_client_subscribe_spot(ac_client_t *client);
+ac_status_t ac_client_dismiss(ac_client_t *client);
+ac_status_t ac_client_receive(ac_client_t *client, char buffer[AC_BUFFER_SIZE], ac_event_t *event, ac_event_type_t *event_type);

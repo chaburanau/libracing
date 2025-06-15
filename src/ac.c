@@ -7,93 +7,152 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+static int ac_server_address_size = sizeof(struct sockaddr_in);
+static int ac_request_size = sizeof(ac_request_t);
+
 static WSADATA ac_wsa_data;
-static SOCKET ac_socket = INVALID_SOCKET;
-static struct sockaddr_in ac_server_address;
-static int ac_server_address_size = sizeof(ac_server_address);
-
 static bool ac_wsa_initialized = false;
-static bool ac_socket_initialized = false;
-static bool ac_handshaked = false;
+static int ac_wsa_usage_count = 0;
 
-ac_status_t ac_init() {
-	if (ac_wsa_initialized) return AC_STATUS_ALREADY_INITIALIZED;
-	if (ac_socket_initialized) return AC_STATUS_ALREADY_INITIALIZED;
+ac_client_t ac_new_client() {
+	ac_client_t client = {
+		._socket_initialized = false,
+		._address_initialized = false,
+		._handshake_initialized = false,
+		._socket = INVALID_SOCKET,
+		._server_address = { 0 },
+	};
 
-	const int wsa_startup_status = WSAStartup(MAKEWORD(2, 2), &ac_wsa_data);
-	if (wsa_startup_status != 0) {
-		fprintf(stderr, "AC: WSAStartup failed. Error: %d; %d\n", WSAGetLastError(), wsa_startup_status);
-		return AC_STATUS_SOCKET_ERROR;
+	return client;
+}
+
+ac_status_t ac_client_init(ac_client_t *client) {
+	if (client->_socket_initialized) return AC_STATUS_ALREADY_INITIALIZED;
+	if (client->_address_initialized) return AC_STATUS_ALREADY_INITIALIZED;
+	if (client->_handshake_initialized) return AC_STATUS_ALREADY_HANDSHAKED;
+
+	if (!ac_wsa_initialized) {
+		const int wsa_startup_status = WSAStartup(MAKEWORD(2, 2), &ac_wsa_data);
+		if (wsa_startup_status != 0) {
+			fprintf(stderr, "AC: WSAStartup failed. Error: %d; %d\n", WSAGetLastError(), wsa_startup_status);
+			return AC_STATUS_SOCKET_ERROR;
+		}
 	}
 
 	ac_wsa_initialized = true;
+	ac_wsa_usage_count++;
 
-	ac_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (ac_socket == INVALID_SOCKET) {
+	client->_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (client->_socket == INVALID_SOCKET) {
 		fprintf(stderr, "AC: socket failed. Error: %d\n", WSAGetLastError());
 		return AC_STATUS_SOCKET_ERROR;
 	}
 
-	ac_socket_initialized = true;
+	client->_socket_initialized = true;
 
-	ZeroMemory(&ac_server_address, sizeof(ac_server_address));
-	ac_server_address.sin_family = AF_INET;
-	ac_server_address.sin_port = htons(AC_SERVER_PORT);
+	ZeroMemory(&client->_server_address, ac_server_address_size);
+	client->_server_address.sin_family = AF_INET;
+	client->_server_address.sin_port = htons(AC_SERVER_PORT);
 
-	if (inet_pton(AF_INET, AC_SERVER_IP, &ac_server_address.sin_addr) != 1) {
+	if (inet_pton(AF_INET, AC_SERVER_IP, &client->_server_address.sin_addr) != 1) {
 		fprintf(stderr, "AC: inet_pton failed. Error: %d\n", WSAGetLastError());
 		return AC_STATUS_SOCKET_ERROR;
 	}
 
+	client->_address_initialized = true;
 	return AC_STATUS_OK;
 }
 
-ac_status_t ac_close() {
-	if (ac_socket_initialized) {
-		closesocket(ac_socket);
-		ac_socket = INVALID_SOCKET;
-		ac_socket_initialized = false;
+ac_status_t ac_client_close(ac_client_t *client) {
+	if (client->_handshake_initialized) return AC_STATUS_NOT_DISMISSED;
+
+	if (client->_address_initialized) {
+		ZeroMemory(&client->_server_address, ac_server_address_size);
+		client->_address_initialized = false;
+	}
+
+	if (client->_socket_initialized) {
+		closesocket(client->_socket);
+		client->_socket = INVALID_SOCKET;
+		client->_socket_initialized = false;
 	}
 
 	if (ac_wsa_initialized) {
-		WSACleanup();
-		ZeroMemory(&ac_wsa_data, sizeof(ac_wsa_data));
-		ac_wsa_initialized = false;
+		ac_wsa_usage_count--;
+		if (ac_wsa_usage_count == 0) {
+			WSACleanup();
+			ZeroMemory(&ac_wsa_data, sizeof(ac_wsa_data));
+			ac_wsa_initialized = false;
+		}
 	}
 
-	ac_handshaked = false;
 	return AC_STATUS_OK;
 }
 
-ac_status_t ac_send(const ac_handshaker_request_t request) {
+ac_status_t ac_client_send(ac_client_t *client, const ac_request_t request) {
 	if (!ac_wsa_initialized) return AC_STATUS_NOT_INITIALIZED;
-	if (!ac_socket_initialized) return AC_STATUS_NOT_INITIALIZED;
-	if (!ac_handshaked && request.operation != AC_OPERATION_HANDSHAKE) return AC_STATUS_NOT_HANDSHAKED;
+	if (!client->_socket_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!client->_address_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!client->_handshake_initialized && request.operation != AC_OPERATION_HANDSHAKE) return AC_STATUS_NOT_HANDSHAKED;
 
-	const int sent = sendto(ac_socket, (const char*)&request, sizeof(ac_handshaker_request_t), 0, (struct sockaddr *)&ac_server_address, ac_server_address_size);
+	const int sent = sendto(client->_socket, (const char*)&request, ac_request_size, 0, (struct sockaddr *)&client->_server_address, ac_server_address_size);
 	if (sent == SOCKET_ERROR) {
 		fprintf(stderr, "AC: sendto failed. Error: %d\n", WSAGetLastError());
 		return AC_STATUS_SEND_ERROR;
 	}
 
-	switch (request.operation) {
-		case AC_OPERATION_HANDSHAKE:
-			ac_handshaked = true;
-			break;
-		case AC_OPERATION_DISMISS:
-			ac_handshaked = false;
-			break;
-	}
-
+	if (request.operation == AC_OPERATION_HANDSHAKE) client->_handshake_initialized = true;
+	if (request.operation == AC_OPERATION_DISMISS) client->_handshake_initialized = false;
 	return AC_STATUS_OK;
 }
 
-ac_status_t ac_receive(char *buffer, const int buffer_size, ac_event_t *event, ac_event_type_t *event_type) {
-	if (!ac_wsa_initialized) return AC_STATUS_NOT_INITIALIZED;
-	if (!ac_socket_initialized) return AC_STATUS_NOT_INITIALIZED;
-	if (!ac_handshaked) return AC_STATUS_NOT_HANDSHAKED;
+ac_status_t ac_client_handshake(ac_client_t *client) {
+	const ac_request_t request = {
+		.identifier = AC_IDENTIFIER,
+		.version = AC_SERVER_VERSION,
+		.operation = AC_OPERATION_HANDSHAKE,
+	};
 
-	const int received = recvfrom(ac_socket, buffer, buffer_size, 0, (struct sockaddr *)&ac_server_address, &ac_server_address_size);
+	return ac_client_send(client, request);
+}
+
+ac_status_t ac_client_subscribe_update(ac_client_t *client) {
+	const ac_request_t request = {
+		.identifier = AC_IDENTIFIER,
+		.version = AC_SERVER_VERSION,
+		.operation = AC_OPERATION_SUBSCRIBE_UPDATE,
+	};
+
+	return ac_client_send(client, request);
+}
+
+ac_status_t ac_client_subscribe_spot(ac_client_t *client) {
+	const ac_request_t request = {
+		.identifier = AC_IDENTIFIER,
+		.version = AC_SERVER_VERSION,
+		.operation = AC_OPERATION_SUBSCRIBE_SPOT,
+	};
+
+	return ac_client_send(client, request);
+}
+
+ac_status_t ac_client_dismiss(ac_client_t *client) {
+	const ac_request_t request = {
+		.identifier = AC_IDENTIFIER,
+		.version = AC_SERVER_VERSION,
+		.operation = AC_OPERATION_DISMISS,
+	};
+
+	return ac_client_send(client, request);
+}
+
+ac_status_t ac_client_receive(ac_client_t *client, char buffer[AC_BUFFER_SIZE], ac_event_t *event, ac_event_type_t *event_type) {
+	if (!ac_wsa_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!client->_socket_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!client->_address_initialized) return AC_STATUS_NOT_INITIALIZED;
+	if (!client->_handshake_initialized) return AC_STATUS_NOT_HANDSHAKED;
+
+	const int received = recvfrom(client->_socket, buffer, AC_BUFFER_SIZE, 0, (struct sockaddr *)&client->_server_address, &ac_server_address_size);
 	if (received == SOCKET_ERROR) {
 		const int err = WSAGetLastError();
 		if (err == WSAETIMEDOUT) {
@@ -106,9 +165,9 @@ ac_status_t ac_receive(char *buffer, const int buffer_size, ac_event_t *event, a
 	}
 
 	switch (received) {
-		case sizeof(ac_handshaker_response_t):
+		case sizeof(ac_response_t):
 			*event_type = AC_EVENT_TYPE_HANDSHAKE;
-			event->handshake = (ac_handshaker_response_t *)buffer;
+			event->handshake = (ac_response_t *)buffer;
 			break;
 		case sizeof(ac_rt_car_info):
 			*event_type = AC_EVENT_TYPE_CAR_INFO;
