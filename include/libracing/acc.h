@@ -279,13 +279,23 @@ typedef struct RealTimeUpdate {
     char *current_hud_page;               // Name of the current HUD page
 } acc_rt_update_t;
 
-typedef struct Client {
-    char *connection_identifier;
+typedef struct ConnectionStateChange {
     int connection_id;
-    int cars_count;
-    int drivers_count;
-    acc_car_info_t *cars;
-    acc_driver_info_t *drivers;
+    bool connection_success;
+    bool is_read_only;
+    char *error_message;
+} acc_connection_state_change_t;
+
+typedef struct Client {
+    int connection_id;
+
+    void (*on_registration_result)(acc_connection_state_change_t state_change);
+    void (*on_entry_list)(int connection_id, int cars_count, unsigned short cars[]);
+    void (*on_entry_list_car) (acc_car_info_t car);
+    void (*on_real_time_update)(acc_rt_update_t *update);
+    void (*on_real_time_car_update)(acc_rt_car_update_t *update);
+    void (*on_track_data)(acc_track_data_t *track_data);
+    void (*on_broadcasting_event)(acc_broadcasting_event_t *event);
 } acc_client_t;
 
 acc_client_t acc_new_client();
@@ -293,8 +303,8 @@ acc_client_t acc_new_client();
 acc_status_t acc_client_connect(acc_client_t *client);
 acc_status_t acc_client_disconnect(acc_client_t *client);
 
-acc_status_t request_entry_list(acc_client_t *client);
-acc_status_t request_track_data(acc_client_t *client);
-acc_status_t request_change_focus(acc_client_t *client, int car_index, char *camera_set, char *camera);
-acc_status_t request_instant_replay_request(acc_client_t *client, float start_session_time, float duration, int car_index, char *camera_set, char *camera);
-acc_status_t request_hud_page(acc_client_t *client, char *hud_page);
+acc_status_t acc_client_request_entry_list(acc_client_t *client);
+acc_status_t acc_client_request_track_data(acc_client_t *client);
+acc_status_t acc_client_request_change_focus(acc_client_t *client, int car_index, char *camera_set, char *camera);
+acc_status_t acc_client_request_instant_replay_request(acc_client_t *client, float start_session_time, float duration, int car_index, char *camera_set, char *camera);
+acc_status_t acc_client_request_hud_page(acc_client_t *client, char *hud_page);
