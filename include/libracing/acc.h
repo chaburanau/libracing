@@ -4,6 +4,18 @@
 
 const int ACC_BROADCASTING_PROTOCOL_VERSION = 4;
 
+typedef enum Status {
+    ACC_STATUS_OK = 0,
+    ACC_STATUS_NOT_INITIALIZED = 1,
+    ACC_STATUS_NOT_HANDSHAKED = 2,
+    ACC_STATUS_NOT_CONNECTED = 3,
+    ACC_STATUS_NOT_REGISTERED = 4,
+    ACC_STATUS_NOT_READY = 5,
+    ACC_STATUS_NOT_RUNNING = 6,
+    ACC_STATUS_NOT_PAUSED = 7,
+    ACC_STATUS_NOT_FINISHED = 8,
+} acc_status_t;
+
 typedef enum LapType {
     ACC_LAP_TYPE_INVALID = 0,
     ACC_LAP_TYPE_OUTLAP = 1,
@@ -204,7 +216,11 @@ typedef struct TrackData {
     char *track_name;      // Name of the track
     int track_id;          // ID of the track
     float track_length;    // Track length (in meters)
-    char **camera_sets;    // Available Camera Sets (dictionary)
+    int camera_sets_count; // Count of Camera Sets
+    char **camera_sets;    // Available Camera Sets (array)
+    int cameras_count;     // Count of Cameras
+    char **cameras;        // Available Cameras (array). Format is "{camera_sets_index}:{camera_name}"
+    int hud_pages_count;   // Count of HUD Pages
     char **hud_pages;      // Available HUD Pages (array)
 } acc_track_data_t;
 
@@ -212,8 +228,7 @@ typedef struct BroadcastingEvent {
     int type;                // Broadcasting Event Type
     char *message;           // Broadcasting Event Message
     int time;                // Broadcasting Event Time (in ms)
-    int car_id;              // Identifier of a car
-    acc_car_info_t car_info; // Car info
+    int car_index;           // Index from a Cars array
 } acc_broadcasting_event_t;
 
 typedef struct RealTimeCarUpdate {
@@ -263,3 +278,23 @@ typedef struct RealTimeUpdate {
     char track_temperature;               // Track temperature
     char *current_hud_page;               // Name of the current HUD page
 } acc_rt_update_t;
+
+typedef struct Client {
+    char *connection_identifier;
+    int connection_id;
+    int cars_count;
+    int drivers_count;
+    acc_car_info_t *cars;
+    acc_driver_info_t *drivers;
+} acc_client_t;
+
+acc_client_t acc_new_client();
+
+acc_status_t acc_client_connect(acc_client_t *client);
+acc_status_t acc_client_disconnect(acc_client_t *client);
+
+acc_status_t request_entry_list(acc_client_t *client);
+acc_status_t request_track_data(acc_client_t *client);
+acc_status_t request_change_focus(acc_client_t *client, int car_index, char *camera_set, char *camera);
+acc_status_t request_instant_replay_request(acc_client_t *client, float start_session_time, float duration, int car_index, char *camera_set, char *camera);
+acc_status_t request_hud_page(acc_client_t *client, char *hud_page);
