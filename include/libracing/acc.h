@@ -1,8 +1,15 @@
 #pragma once
 
 #include <stdbool.h>
+#include <winsock2.h>
 
 const int ACC_BROADCASTING_PROTOCOL_VERSION = 4;
+const int ACC_SERVER_PORT = 9000;
+const int ACC_LOCAL_PORT = 9001;
+const char *ACC_SERVER_IP = "127.0.0.1";
+const char *ACC_LOCAL_IP = "127.0.0.1";
+const char *ACC_CONNECTION_PASSWORD = "asd";
+const char *ACC_COMMAND_PASSWORD = "";
 
 typedef enum Status {
     ACC_STATUS_OK = 0,
@@ -14,6 +21,9 @@ typedef enum Status {
     ACC_STATUS_NOT_RUNNING = 6,
     ACC_STATUS_NOT_PAUSED = 7,
     ACC_STATUS_NOT_FINISHED = 8,
+    ACC_STATUS_ALREADY_INITIALIZED = 9,
+    ACC_STATUS_SOCKET_ERROR = 10,
+    ACC_STATUS_NOT_DISMISSED = 11,
 } acc_status_t;
 
 typedef enum LapType {
@@ -288,6 +298,18 @@ typedef struct ConnectionStateChange {
 
 typedef struct Client {
     int connection_id;
+
+    bool _server_socket_initialized;
+    bool _client_socket_initialized;
+    bool _server_address_initialized;
+    bool _client_address_initialized;
+    bool _client_socket_binded;
+    bool _handshake_initialized;
+
+    SOCKET _server_socket;
+    SOCKET _client_socket;
+    struct sockaddr_in _server_address;
+    struct sockaddr_in _client_address;
 
     void (*on_registration_result)(acc_connection_state_change_t state_change);
     void (*on_entry_list)(int connection_id, int cars_count, unsigned short cars[]);
