@@ -11,7 +11,7 @@ const char *ACC_LOCAL_IP = "127.0.0.1";
 const char *ACC_CONNECTION_PASSWORD = "asd";
 const char *ACC_COMMAND_PASSWORD = "";
 
-typedef enum Status {
+typedef enum {
     ACC_STATUS_OK = 0,
     ACC_STATUS_NOT_INITIALIZED = 1,
     ACC_STATUS_NOT_HANDSHAKED = 2,
@@ -26,14 +26,14 @@ typedef enum Status {
     ACC_STATUS_NOT_DISMISSED = 11,
 } acc_status_t;
 
-typedef enum LapType {
+typedef enum {
     ACC_LAP_TYPE_INVALID = 0,
     ACC_LAP_TYPE_OUTLAP = 1,
     ACC_LAP_TYPE_REGULAR = 2,
     ACC_LAP_TYPE_INLAP = 3,
 } acc_lap_type_t;
 
-typedef enum DriverCategory {
+typedef enum {
     ACC_DRIVER_CATEGORY_BRONZE = 0,
     ACC_DRIVER_CATEGORY_SILVER = 1,
     ACC_DRIVER_CATEGORY_GOLD = 2,
@@ -41,7 +41,7 @@ typedef enum DriverCategory {
     ACC_DRIVER_CATEGORY_UNKNOWN = 255,
 } acc_driver_category_t;
 
-typedef enum CarLocation {
+typedef enum {
     ACC_CAR_LOCATION_UNKNOWN = 0,
     ACC_CAR_LOCATION_TRACK = 1,
     ACC_CAR_LOCATION_PITLANE = 2,
@@ -49,7 +49,7 @@ typedef enum CarLocation {
     ACC_CAR_LOCATION_PITEXIT = 4,
 } acc_car_location_t;
 
-typedef enum SessionPhase {
+typedef enum {
     ACC_SESSION_PHASE_UNKNOWN = 0,
     ACC_SESSION_PHASE_STARTING = 1,
     ACC_SESSION_PHASE_PRE_FORMATION = 2,
@@ -61,7 +61,7 @@ typedef enum SessionPhase {
     ACC_SESSION_PHASE_RESULT_UI = 8,
 } acc_session_phase_t;
 
-typedef enum SessionType {
+typedef enum {
     ACC_SESSION_TYPE_PRACTICE = 0,
     ACC_SESSION_TYPE_QUALIFYING = 4,
     ACC_SESSION_TYPE_SUPERPOLE = 9,
@@ -72,7 +72,7 @@ typedef enum SessionType {
     ACC_SESSION_TYPE_REPLAY = 14,
 } acc_session_type_t;
 
-typedef enum BroadcastingEventType {
+typedef enum {
     ACC_BROADCASTING_EVENT_TYPE_UNKNOWN = 0,
     ACC_BROADCASTING_EVENT_TYPE_GREEN_FLAG = 1,
     ACC_BROADCASTING_EVENT_TYPE_SESSION_OVER = 2,
@@ -83,7 +83,7 @@ typedef enum BroadcastingEventType {
     ACC_BROADCASTING_EVENT_TYPE_BEST_PERSONAL_LAP = 7,
 } acc_broadcasting_event_type_t;
 
-typedef enum Nationality {
+typedef enum {
     Any = 0,
     Italy = 1,
     Germany = 2,
@@ -171,7 +171,7 @@ typedef enum Nationality {
     Madagascar = 84,
 } acc_nationality_t;
 
-typedef enum OutboundMessageTypes {
+typedef enum {
     ACC_OUTBOUND_MESSAGE_REGISTER_COMMAND_APPLICATION = 1,
     ACC_OUTBOUND_MESSAGE_UNREGISTER_COMMAND_APPLICATION = 9,
     ACC_OUTBOUND_MESSAGE_REQUEST_ENTRY_LIST = 10,
@@ -183,7 +183,7 @@ typedef enum OutboundMessageTypes {
     ACC_OUTBOUND_MESSAGE_SAVE_MANUAL_REPLAY_HIGHLIGHT = 60,
 } acc_outbound_message_type_t;
 
-typedef enum InboundMessageTypes {
+typedef enum {
     ACC_INBOUND_MESSAGE_REGISTRATION_RESULT = 1,
     ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE = 2,
     ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE = 3,
@@ -193,7 +193,7 @@ typedef enum InboundMessageTypes {
     ACC_INBOUND_MESSAGE_BROADCASTING_EVENT = 7,
 } acc_inbound_message_type_t;
 
-typedef struct DriverInfo {
+typedef struct {
     char *first_name;  // Driver's First Name
     char *last_name;   // Driver's Last Name
     char *short_name;  // Short Driver Name
@@ -201,7 +201,7 @@ typedef struct DriverInfo {
     int nationality;   // Nationality Enum
 } acc_driver_info_t;
 
-typedef struct CarInfo {
+typedef struct {
     unsigned short car_index;         // Index from a Cars array
     char car_model_type;              // Model type of the car
     char cup_category;                // Cup category
@@ -212,7 +212,7 @@ typedef struct CarInfo {
     acc_driver_info_t driver_info[4]; // A Drivers array
 } acc_car_info_t;
 
-typedef struct LapInfo {
+typedef struct {
     int lap_time;                // Lap time (in ms)
     int splits[];                // Lap split times
     unsigned short car_index;    // Index from a Cars array
@@ -222,7 +222,7 @@ typedef struct LapInfo {
     int lap_type;                // LapType Enum
 } acc_lap_info_t;
 
-typedef struct TrackData {
+typedef struct {
     char *track_name;      // Name of the track
     int track_id;          // ID of the track
     float track_length;    // Track length (in meters)
@@ -234,14 +234,14 @@ typedef struct TrackData {
     char **hud_pages;      // Available HUD Pages (array)
 } acc_track_data_t;
 
-typedef struct BroadcastingEvent {
+typedef struct {
     int type;                // Broadcasting Event Type
     char *message;           // Broadcasting Event Message
     int time;                // Broadcasting Event Time (in ms)
     int car_index;           // Index from a Cars array
 } acc_broadcasting_event_t;
 
-typedef struct RealTimeCarUpdate {
+typedef struct {
     int car_index;                   // Index from a Cars array
     int driver_index;                // Index from a Drivers array
     int gear;                        // Gear the car is currently in
@@ -262,7 +262,7 @@ typedef struct RealTimeCarUpdate {
     char driver_count;               // Number of drivers from this car
 } acc_rt_car_update_t;
 
-typedef struct RealTimeUpdate {
+typedef struct {
     int event_index;                      // Index from a Events array
     int session_index;                    // Index from a Session array
     int phase;                            // SessionPhase enum
@@ -289,44 +289,96 @@ typedef struct RealTimeUpdate {
     char *current_hud_page;               // Name of the current HUD page
 } acc_rt_update_t;
 
-typedef struct ConnectionStateChange {
+typedef struct {
     int connection_id;
     bool connection_success;
     bool is_read_only;
     char *error_message;
-} acc_connection_state_change_t;
+} acc_reg_result_t;
 
-typedef struct Client {
+typedef struct {
+    int indexes_count;
+    unsigned short *indexes;
+} acc_entry_list_t;
+
+typedef struct {
+    int update_interval;
+    int display_name_size;
+    int connection_password_size;
+    int command_password_size;
+    char *display_name;
+    char *connection_password;
+    char *command_password;
+} acc_reg_app_t;
+
+typedef struct {
+} acc_unreg_app_t;
+
+typedef struct {
     int connection_id;
+} acc_req_entry_list_t;
 
-    bool _server_socket_initialized;
-    bool _client_socket_initialized;
-    bool _server_address_initialized;
-    bool _client_address_initialized;
-    bool _client_socket_binded;
-    bool _handshake_initialized;
+typedef struct {
+    int connection_id;
+} acc_req_track_data_t;
 
-    SOCKET _server_socket;
-    SOCKET _client_socket;
-    struct sockaddr_in _server_address;
-    struct sockaddr_in _client_address;
+typedef struct {
+    int connection_id;
+    int hud_page_size;
+    char *hud_page;
+} acc_change_hud_page_t;
 
-    void (*on_registration_result)(acc_connection_state_change_t state_change);
-    void (*on_entry_list)(int connection_id, int cars_count, unsigned short cars[]);
-    void (*on_entry_list_car) (acc_car_info_t car);
-    void (*on_real_time_update)(acc_rt_update_t *update);
-    void (*on_real_time_car_update)(acc_rt_car_update_t *update);
-    void (*on_track_data)(acc_track_data_t *track_data);
-    void (*on_broadcasting_event)(acc_broadcasting_event_t *event);
+typedef struct {
+    int connection_id;
+    short *car_index;
+    int camera_set_size;
+    int camera_size;
+    char *camera_set;
+    char *camera;
+} acc_change_focus_t;
+
+typedef struct {
+    int connection_id;
+    float start_session_time;
+    float duration; // In ms
+    int initial_focused_car_index;
+    int initial_camera_set_size;
+    int initial_camera_size;
+    char *initial_camera_set;
+    char *initial_camera;
+} acc_req_instant_replay_t;
+
+typedef union {
+    acc_reg_app_t            *register_application;
+    acc_unreg_app_t          *unregister_application;
+    acc_req_entry_list_t     *request_entry_list;
+    acc_req_track_data_t     *request_track_data;
+    acc_change_hud_page_t    *request_hud_page;
+    acc_change_focus_t       *change_focus;
+    acc_req_instant_replay_t *request_instant_replay;
+} acc_server_request_t;
+
+typedef union {
+    acc_reg_result_t         *registration_result;
+    acc_rt_update_t          *real_time_update;
+    acc_rt_car_update_t      *real_time_car_update;
+    acc_entry_list_t         *entry_list;
+    acc_car_info_t           *entry_list_car;
+    acc_track_data_t         *track_data;
+    acc_broadcasting_event_t *broadcasting_event;
+} acc_server_response_t;
+
+typedef struct {
+    int connection_id;
+    bool _socket_initialized;
+    bool _address_initialized;
+    bool _handshake_completed;
+    SOCKET _socket;
+    SOCKADDR_IN _address;
 } acc_client_t;
 
 acc_client_t acc_new_client();
-
-acc_status_t acc_client_connect(acc_client_t *client);
+acc_status_t acc_client_connect(acc_client_t *client, const char *server_ip, int server_port);
 acc_status_t acc_client_disconnect(acc_client_t *client);
-
-acc_status_t acc_client_request_entry_list(acc_client_t *client);
-acc_status_t acc_client_request_track_data(acc_client_t *client);
-acc_status_t acc_client_request_change_focus(acc_client_t *client, int car_index, char *camera_set, char *camera);
-acc_status_t acc_client_request_instant_replay_request(acc_client_t *client, float start_session_time, float duration, int car_index, char *camera_set, char *camera);
-acc_status_t acc_client_request_hud_page(acc_client_t *client, char *hud_page);
+acc_status_t acc_client_send(acc_client_t *client, acc_outbound_message_type_t type, acc_server_request_t request);
+acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t *type, acc_server_response_t *response);
