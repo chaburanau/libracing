@@ -24,9 +24,11 @@ ac_status_t ac_client_close(ac_client_t *client) {
 		return AC_STATUS_CLIENT_NOT_INITIALIZED;
 	}
 
-	udp_socket_close(client->udp_socket);
-	free(client);
+	if (client->udp_socket != NULL) {
+		udp_socket_close(client->udp_socket);
+	}
 
+	free(client);
 	return AC_STATUS_OK;
 }
 
