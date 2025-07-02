@@ -58,72 +58,60 @@ void receive_data(ac_client_t *client) {
 int main(int argc, char *argv[]) {
     setlocale(LC_ALL, "en_US.UTF-8");
 
-    ac_client_t updater = ac_new_client();
-    ac_client_t spotter = ac_new_client();
+    ac_client_t* updater = ac_client_create();
+    ac_client_t* spotter = ac_client_create();
 
-    const ac_status_t init_updater_status = ac_client_init(&updater);
-    if (init_updater_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_client_init for updater failed with error %d\n", init_updater_status);
-        return -1;
-    }
-
-    const ac_status_t init_spotter_status = ac_client_init(&spotter);
-    if (init_spotter_status != AC_STATUS_OK) {
-        fprintf(stderr, "ac_client_init for spotter failed with error %d\n", init_spotter_status);
-        return -1;
-    }
-
-    const ac_status_t handshake_updater_status = ac_client_handshake(&updater);
+    const ac_status_t handshake_updater_status = ac_client_handshake(updater);
     if (handshake_updater_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_handshake for updater failed with error %d\n", handshake_updater_status);
         return -1;
     }
 
-    const ac_status_t handshake_spotter_status = ac_client_handshake(&spotter);
+    const ac_status_t handshake_spotter_status = ac_client_handshake(spotter);
     if (handshake_spotter_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_handshake for spotter failed with error %d\n", handshake_spotter_status);
         return -1;
     }
 
-    receive_data(&updater);
-    receive_data(&spotter);
+    receive_data(updater);
+    receive_data(spotter);
 
-    const ac_status_t subscribe_update_status = ac_client_subscribe_update(&updater);
+    const ac_status_t subscribe_update_status = ac_client_subscribe_update(updater);
     if (subscribe_update_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_subscribe_update failed with error %d\n", subscribe_update_status);
         return -1;
     }
 
-    const ac_status_t subscribe_spot_status = ac_client_subscribe_spot(&spotter);
+    const ac_status_t subscribe_spot_status = ac_client_subscribe_spot(spotter);
     if (subscribe_spot_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_subscribe_spot failed with error %d\n", subscribe_spot_status);
         return -1;
     }
 
     for (int i = 0; i < 10000; i++) {
-        receive_data(&updater);
-        receive_data(&spotter);
+        receive_data(updater);
+        receive_data(spotter);
     }
 
-    const ac_status_t dismiss_updater_status = ac_client_dismiss(&updater);
+    const ac_status_t dismiss_updater_status = ac_client_dismiss(updater);
     if (dismiss_updater_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_dismiss for updater failed with error %d\n", dismiss_updater_status);
         return -1;
     }
 
-    const ac_status_t dismiss_spotter_status = ac_client_dismiss(&spotter);
+    const ac_status_t dismiss_spotter_status = ac_client_dismiss(spotter);
     if (dismiss_spotter_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_dismiss for spotter failed with error %d\n", dismiss_spotter_status);
         return -1;
     }
 
-    const ac_status_t close_updater_status = ac_client_close(&updater);
+    const ac_status_t close_updater_status = ac_client_close(updater);
     if (close_updater_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_close for updater failed with error %d\n", close_updater_status);
         return -1;
     }
 
-    const ac_status_t close_spotter_status = ac_client_close(&spotter);
+    const ac_status_t close_spotter_status = ac_client_close(spotter);
     if (close_spotter_status != AC_STATUS_OK) {
         fprintf(stderr, "ac_client_close for spotter failed with error %d\n", close_spotter_status);
         return -1;

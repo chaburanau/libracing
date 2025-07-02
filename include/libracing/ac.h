@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <winsock2.h>
+#include "udp_socket.h"
 
 #define AC_BUFFER_SIZE 408
 
@@ -24,6 +24,7 @@ typedef enum {
 	AC_STATUS_TIMEOUT_ERROR = 9,
 	AC_STATUS_RECEIVED_INVALID_DATA = 10,
 	AC_STATUS_NOT_DISMISSED = 11,
+	AC_STATUS_CLIENT_NOT_INITIALIZED = 100,
 } ac_status_t;
 
 typedef enum {
@@ -129,16 +130,11 @@ typedef union {
 } ac_event_t;
 
 typedef struct {
-	bool _socket_initialized;
-	bool _address_initialized;
+	udp_socket_t* udp_socket;
 	bool _handshake_initialized;
-
-	SOCKET _socket;
-	struct sockaddr_in _server_address;
 } ac_client_t;
 
-ac_client_t ac_new_client();
-ac_status_t ac_client_init(ac_client_t *client);
+ac_client_t* ac_client_create();
 ac_status_t ac_client_close(ac_client_t *client);
 ac_status_t ac_client_handshake(ac_client_t *client);
 ac_status_t ac_client_subscribe_update(ac_client_t *client);

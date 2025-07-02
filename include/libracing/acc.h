@@ -1,11 +1,32 @@
 #pragma once
 
 #include <stdbool.h>
-#include <winsock2.h>
+#include <stdint.h>
+#include "udp_socket.h"
 
-const int ACC_BROADCASTING_PROTOCOL_VERSION = 4;
-const int ACC_SERVER_PORT = 9000;
-const int ACC_LOCAL_PORT = 9001;
+typedef struct {
+    int length;
+    char *data;
+} string_t;
+
+typedef struct {
+    int length;
+    int32_t *data;
+} int32_array_t;
+
+typedef struct {
+    int length;
+    uint16_t *data;
+} uint16_array_t;
+
+typedef struct {
+    int length;
+    string_t *data;
+} string_array_t;
+
+const int8_t ACC_BROADCASTING_PROTOCOL_VERSION = 4;
+const int32_t ACC_SERVER_PORT = 9000;
+const int32_t ACC_LOCAL_PORT = 9001;
 const char *ACC_SERVER_IP = "127.0.0.1";
 const char *ACC_LOCAL_IP = "127.0.0.1";
 const char *ACC_CONNECTION_PASSWORD = "asd";
@@ -24,6 +45,13 @@ typedef enum {
     ACC_STATUS_ALREADY_INITIALIZED = 9,
     ACC_STATUS_SOCKET_ERROR = 10,
     ACC_STATUS_NOT_DISMISSED = 11,
+    ACC_STATUS_CLIENT_NOT_INITIALIZED = 100,
+    ACC_STATUS_SEND_ERROR = 101,
+    ACC_STATUS_RECEIVE_ERROR = 102,
+    ACC_STATUS_INVALID_OUTBOUND_MESSAGE_TYPE = 200,
+    ACC_STATUS_BUFFER_SIZE_MISMATCH = 300,
+    ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_SENT = 400,
+    ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_RECEIVED = 500,
 } acc_status_t;
 
 typedef enum {
@@ -194,158 +222,146 @@ typedef enum {
 } acc_inbound_message_type_t;
 
 typedef struct {
-    char *first_name;  // Driver's First Name
-    char *last_name;   // Driver's Last Name
-    char *short_name;  // Short Driver Name
-    int category;      // DriverCategory Enum
-    int nationality;   // Nationality Enum
+    string_t *first_name;   // Driver's First Name
+    string_t *last_name;    // Driver's Last Name
+    string_t *short_name;   // Short Driver Name
+    int32_t category;       // DriverCategory Enum
+    int32_t nationality;    // Nationality Enum
 } acc_driver_info_t;
 
 typedef struct {
-    unsigned short car_index;         // Index from a Cars array
-    char car_model_type;              // Model type of the car
-    char cup_category;                // Cup category
-    char *team_name;                  // Team name of the car
-    int nationality;                  // Nationality Enum
-    int race_number;                  // Car number
-    int current_driver_index;         // Index from a Drivers array
-    acc_driver_info_t driver_info[4]; // A Drivers array
+    uint16_t car_index;                 // Index from a Cars array
+    int8_t car_model_type;              // Model type of the car
+    int8_t cup_category;                // Cup category
+    string_t *team_name;                // Team name of the car
+    int32_t nationality;                // Nationality Enum
+    int32_t race_number;                // Car number
+    int32_t current_driver_index;       // Index from a Drivers array
+    acc_driver_info_t driver_info[4];   // A Drivers array
 } acc_car_info_t;
 
 typedef struct {
-    int lap_time;                // Lap time (in ms)
-    int splits[];                // Lap split times
-    unsigned short car_index;    // Index from a Cars array
-    unsigned short driver_index; // Index from a Drivers array
-    bool is_invalid;             // Flag if a lap is invalid
-    bool is_valid_for_best;      // Flag if a lap can be counted towards the best attempt
-    int lap_type;                // LapType Enum
+    int32_t lap_time;           // Lap time (in ms)
+    int32_array_t *splits[];    // Lap split times
+    uint16_t car_index;         // Index from a Cars array
+    uint16_t driver_index;      // Index from a Drivers array
+    bool is_invalid;            // Flag if a lap is invalid
+    bool is_valid_for_best;     // Flag if a lap can be counted towards the best attempt
+    int32_t lap_type;           // LapType Enum
 } acc_lap_info_t;
 
 typedef struct {
-    char *track_name;      // Name of the track
-    int track_id;          // ID of the track
-    float track_length;    // Track length (in meters)
-    int camera_sets_count; // Count of Camera Sets
-    char **camera_sets;    // Available Camera Sets (array)
-    int cameras_count;     // Count of Cameras
-    char **cameras;        // Available Cameras (array). Format is "{camera_sets_index}:{camera_name}"
-    int hud_pages_count;   // Count of HUD Pages
-    char **hud_pages;      // Available HUD Pages (array)
+    string_t *track_name;           // Name of the track
+    int32_t track_id;               // ID of the track
+    float track_length;             // Track length (in meters)
+    string_array_t *camera_sets;    // Available Camera Sets (array)
+    string_array_t *cameras;        // Available Cameras (array). Format is "{camera_sets_index}:{camera_name}"
+    string_array_t *hud_pages;      // Available HUD Pages (array)
 } acc_track_data_t;
 
 typedef struct {
-    int type;                // Broadcasting Event Type
-    char *message;           // Broadcasting Event Message
-    int time;                // Broadcasting Event Time (in ms)
-    int car_index;           // Index from a Cars array
+    int32_t type;                // Broadcasting Event Type
+    string_t *message;           // Broadcasting Event Message
+    int32_t time;                // Broadcasting Event Time (in ms)
+    int32_t car_index;           // Index from a Cars array
 } acc_broadcasting_event_t;
 
 typedef struct {
-    int car_index;                   // Index from a Cars array
-    int driver_index;                // Index from a Drivers array
-    int gear;                        // Gear the car is currently in
-    float world_position_x;          // X Position on the track
-    float world_position_y;          // Y Position on the track
-    float yaw;                       // Yaw of the car
-    int car_location;                // CarLocation Enum
-    int speed;                       // Car's speed (in km/h)
-    int position;                    // Car's position
-    int track_position;              // Car's track position
-    float spline_position;           // Car's spline position
-    int delta;                       // Car's current delta
-    acc_lap_info_t best_session_lap; // Best lap info
-    acc_lap_info_t last_lap;         // Last lap info
-    acc_lap_info_t current_lap;      // Current lap info
-    int laps;                        // Laps
-    unsigned short cup_position;     // Cup position
-    char driver_count;               // Number of drivers from this car
+    int32_t car_index;                  // Index from a Cars array
+    int32_t driver_index;               // Index from a Drivers array
+    int32_t gear;                       // Gear the car is currently in
+    float world_position_x;             // X Position on the track
+    float world_position_y;             // Y Position on the track
+    float yaw;                          // Yaw of the car
+    int32_t car_location;               // CarLocation Enum
+    int32_t speed;                      // Car's speed (in km/h)
+    int32_t position;                   // Car's position
+    int32_t track_position;             // Car's track position
+    float spline_position;              // Car's spline position
+    int32_t delta;                      // Car's current delta
+    acc_lap_info_t best_session_lap;    // Best lap info
+    acc_lap_info_t last_lap;            // Last lap info
+    acc_lap_info_t current_lap;         // Current lap info
+    int32_t laps;                       // Laps
+    uint16_t cup_position;              // Cup position
+    int8_t driver_count;                // Number of drivers from this car
 } acc_rt_car_update_t;
 
 typedef struct {
-    int event_index;                      // Index from a Events array
-    int session_index;                    // Index from a Session array
-    int phase;                            // SessionPhase enum
-    int session_time;                     // Session Time (timespan)
-    int remaining_time;                   // Remaining Time (timespan)
-    int time_of_day;                      // Time of the day (timespan)
-    float rain_level;                     // Rain level
-    float cloud_level;                    // Cloud level
-    float wetness_level;                  // Wetness level
-    acc_lap_info_t best_session_lap;      // Best Session Lap
-    unsigned short best_lap_car_index;    // Index from a Cars array
-    unsigned short best_lap_driver_index; // Index from a Drivers array
-    int focused_car_index;                // Index from a Cameras array
-    char *active_camera_set;              // Name of the active camera set
-    char *active_camera;                  // Name of the active camera
-    bool is_replay_playing;               // Flag of replay is playing
-    float replay_session_time;            // Replay session time
-    float replay_remaining_time;          // Replay remaining time
-    float session_remaining_time;         // Session remaining time (timespan)
-    float session_end_time;               // Session end time (timespan)
-    int session_type;                     // SessionType enum
-    char ambient_temperature;             // Ambient temperature
-    char track_temperature;               // Track temperature
-    char *current_hud_page;               // Name of the current HUD page
+    int32_t event_index;                // Index from a Events array
+    int32_t session_index;              // Index from a Session array
+    int32_t phase;                      // SessionPhase enum
+    int32_t session_time;               // Session Time (timespan)
+    int32_t remaining_time;             // Remaining Time (timespan)
+    int32_t time_of_day;                // Time of the day (timespan)
+    float rain_level;                   // Rain level
+    float cloud_level;                  // Cloud level
+    float wetness_level;                // Wetness level
+    acc_lap_info_t best_session_lap;    // Best Session Lap
+    uint16_t best_lap_car_index;        // Index from a Cars array
+    uint16_t best_lap_driver_index;     // Index from a Drivers array
+    int32_t focused_car_index;          // Index from a Cameras array
+    int8_t *active_camera_set;          // Name of the active camera set
+    int8_t *active_camera;              // Name of the active camera
+    bool is_replay_playing;             // Flag of replay is playing
+    float replay_session_time;          // Replay session time
+    float replay_remaining_time;        // Replay remaining time
+    float session_remaining_time;       // Session remaining time (timespan)
+    float session_end_time;             // Session end time (timespan)
+    int32_t session_type;               // SessionType enum
+    int8_t ambient_temperature;         // Ambient temperature
+    int8_t track_temperature;           // Track temperature
+    int8_t *current_hud_page;           // Name of the current HUD page
 } acc_rt_update_t;
 
 typedef struct {
-    int connection_id;
+    int32_t connection_id;
     bool connection_success;
     bool is_read_only;
-    char *error_message;
+    string_t *error_message;
 } acc_reg_result_t;
 
 typedef struct {
-    int indexes_count;
-    unsigned short *indexes;
+    uint16_array_t *indexes;
 } acc_entry_list_t;
 
 typedef struct {
-    int update_interval;
-    int display_name_size;
-    int connection_password_size;
-    int command_password_size;
-    char *display_name;
-    char *connection_password;
-    char *command_password;
+    int32_t update_interval;
+    string_t *display_name;
+    string_t *connection_password;
+    string_t *command_password;
 } acc_reg_app_t;
 
 typedef struct {
 } acc_unreg_app_t;
 
 typedef struct {
-    int connection_id;
+    int32_t connection_id;
 } acc_req_entry_list_t;
 
 typedef struct {
-    int connection_id;
+    int32_t connection_id;
 } acc_req_track_data_t;
 
 typedef struct {
-    int connection_id;
-    int hud_page_size;
-    char *hud_page;
+    int32_t connection_id;
+    string_t *hud_page;
 } acc_change_hud_page_t;
 
 typedef struct {
-    int connection_id;
-    short *car_index;
-    int camera_set_size;
-    int camera_size;
-    char *camera_set;
-    char *camera;
+    int32_t connection_id;
+    uint16_t *car_index;
+    string_t *camera_set;
+    string_t *camera;
 } acc_change_focus_t;
 
 typedef struct {
-    int connection_id;
+    int32_t connection_id;
     float start_session_time;
     float duration; // In ms
-    int initial_focused_car_index;
-    int initial_camera_set_size;
-    int initial_camera_size;
-    char *initial_camera_set;
-    char *initial_camera;
+    int32_t initial_focused_car_index;
+    string_t *initial_camera_set;
+    string_t *initial_camera;
 } acc_req_instant_replay_t;
 
 typedef union {
@@ -370,15 +386,11 @@ typedef union {
 
 typedef struct {
     int connection_id;
-    bool _socket_initialized;
-    bool _address_initialized;
-    bool _handshake_completed;
-    SOCKET _socket;
-    SOCKADDR_IN _address;
+    udp_socket_t *socket;
 } acc_client_t;
 
-acc_client_t acc_new_client();
-acc_status_t acc_client_connect(acc_client_t *client, const char *server_ip, int server_port);
-acc_status_t acc_client_disconnect(acc_client_t *client);
+acc_client_t *acc_client_create(const char *address, int port);
+void acc_client_close(acc_client_t *client);
+
 acc_status_t acc_client_send(acc_client_t *client, acc_outbound_message_type_t type, acc_server_request_t request);
 acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t *type, acc_server_response_t *response);
