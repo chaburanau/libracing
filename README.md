@@ -1,3 +1,5 @@
-# libracing
+# Racing Simulator SDK
 
-Project goal is mainly educational
+* The main goal of this project is for me to try C out
+* No promises for any type of support
+* Feel free to contribute/fork
