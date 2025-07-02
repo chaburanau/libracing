@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 project(libracing C)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 
 ## Versioning
 set(LIBRACING_VERSION_MAJOR 1)
