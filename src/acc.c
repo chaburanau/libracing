@@ -242,7 +242,7 @@ int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
     int8_t splits_size = 0;
     offset = acc_read_int8_t(&splits_size, buffer, offset); // 4. Splits Size
     data->splits = malloc(sizeof(int32_array_t));
-    data->splits->length = (int32_t)splits_size;
+    data->splits->length = (uint32_t)splits_size;
     data->splits->data = malloc(sizeof(int32_t) * splits_size);
 
     for (int index = 0; index < splits_size; index++) {
@@ -267,11 +267,11 @@ int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
     }
 
     if (data->splits->length < 3) {
-        const int32_t old = data->splits->length;
+        const uint32_t old = data->splits->length;
         data->splits->length = 3;
         data->splits->data = realloc(data->splits->data, sizeof(int32_t) * data->splits->length);
 
-        for (int index = old; index < data->splits->length; index++) {
+        for (uint32_t index = old; index < data->splits->length; index++) {
             data->splits->data[index] = INT32_MAX;
         }
     }
@@ -323,6 +323,75 @@ int32_t acc_read_real_time_update(acc_rt_update_t *update, const char *buffer) {
     offset = acc_read_int8_t(&update->rain_level, buffer, offset); // 18. Rain Level
     offset = acc_read_int8_t(&update->wetness_level, buffer, offset); // 19. Wetness Level
     offset = acc_read_lap(&update->best_session_lap, buffer, offset); // 20. Best Session Lap
+
+    return offset;
+}
+
+int32_t acc_read_real_time_car_update(acc_rt_car_update_t *update, const char *buffer) {
+    int32_t offset = 1;
+
+    offset = acc_read_uint16_t(&update->car_index, buffer, offset); // 1. Car Index
+    offset = acc_read_uint16_t(&update->driver_index, buffer, offset); // 2. Driver Index
+    offset = acc_read_int8_t(&update->gear, buffer, offset); // 3. Gear
+    offset = acc_read_float(&update->world_position_x, buffer, offset); // 4. World Position X
+    offset = acc_read_float(&update->world_position_y, buffer, offset); // 5. World Position Y
+    offset = acc_read_float(&update->yaw, buffer, offset); // 6. Yaw
+    offset = acc_read_int8_t(&update->car_location, buffer, offset); // 7. Car Location
+    offset = acc_read_uint16_t(&update->speed, buffer, offset); // 8. Speed
+    offset = acc_read_uint16_t(&update->position, buffer, offset); // 9. Position
+    offset = acc_read_uint16_t(&update->cup_position, buffer, offset); // 10. Cup Position
+    offset = acc_read_uint16_t(&update->track_position, buffer, offset); // 11. Track Position
+    offset = acc_read_float(&update->spline_position, buffer, offset); // 12. Spline Position
+    offset = acc_read_uint16_t(&update->laps, buffer, offset); // 13. Laps
+    offset = acc_read_int32_t(&update->delta, buffer, offset); // 14. Delta
+    offset = acc_read_lap(&update->best_session_lap, buffer, offset); // 15. Best Session Lap
+    offset = acc_read_lap(&update->last_lap, buffer, offset); // 16. Last Lap
+    offset = acc_read_lap(&update->current_lap, buffer, offset); // 17. Current Lap
+
+    return offset;
+}
+
+int32_t acc_read_entry_list(acc_entry_list_t *list, const char *buffer) {
+    int32_t offset = 1;
+    uint16_t size = 0;
+
+    offset = acc_read_int32_t(&list->connection_id, buffer, offset); // 1. Connection ID
+    offset = acc_read_uint16_t(&size, buffer, offset); // 2. Entries Size
+
+    list->indexes = malloc(sizeof(uint16_array_t));
+    list->indexes->length = (uint32_t)size;
+    list->indexes->data = malloc(sizeof(uint16_t) * size);
+
+    for (int i = 0; i < size; i++) {
+        offset = acc_read_uint16_t(&list->indexes->data[i], buffer, offset);
+    }
+
+    return offset;
+}
+
+int32_t acc_read_entry_list_car(acc_car_info_t *data, const char *buffer) {
+    int32_t offset = 1;
+    int8_t size = 0;
+
+    offset = acc_read_uint16_t(&data->car_index, buffer, offset); // 1. Connection ID
+    offset = acc_read_int8_t(&data->car_model_type, buffer, offset); // 2. Car Model Type
+    offset = acc_read_string(data->team_name, buffer, offset); // 3. Team Name
+    offset = acc_read_int32_t(&data->race_number, buffer, offset); // 4. Race Number
+    offset = acc_read_int8_t(&data->cup_category, buffer, offset); // 5. Cup Category
+    offset = acc_read_int8_t(&data->current_driver_index, buffer, offset); // 6. Current Driver Index
+    offset = acc_read_int8_t(&size, buffer, offset); // 7. Drivers Size
+
+    data->drivers_info = malloc(sizeof(acc_driver_info_array_t));
+    data->drivers_info->length = (uint32_t)size;
+    data->drivers_info->data = malloc(sizeof(acc_driver_info_t) * size);
+
+    for (int i = 0; i < size; i++) {
+        offset = acc_read_string(data->drivers_info->data[i].first_name, buffer, offset); // 8. First Name
+        offset = acc_read_string(data->drivers_info->data[i].last_name, buffer, offset); // 9. Last Name
+        offset = acc_read_string(data->drivers_info->data[i].short_name, buffer, offset); // 10. Short Name
+        offset = acc_read_int8_t(&data->drivers_info->data[i].category, buffer, offset); // 11. Category
+        offset = acc_read_uint16_t(&data->drivers_info->data[i].nationality, buffer, offset); // 12. Nationality
+    }
 
     return offset;
 }
@@ -412,6 +481,10 @@ acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t
 
     const int size = 1024 * 1024 * 10;
     char *buffer = malloc(size);
+    if (buffer == NULL) {
+        fprintf(stderr, "ACC: malloc failed\n");
+        return ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+    }
 
     const int received = udp_socket_receive(client->socket, buffer, size);
     if (received < 0) {
@@ -432,14 +505,17 @@ acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t
         case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
             *type = ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE;
             response->real_time_update = malloc(sizeof(acc_rt_update_t));
+            offset = acc_read_real_time_update(response->real_time_update, buffer);
             break;
         case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
             *type = ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE;
             response->real_time_car_update = malloc(sizeof(acc_rt_car_update_t));
+            offset = acc_read_real_time_car_update(response->real_time_car_update, buffer);
             break;
         case ACC_INBOUND_MESSAGE_ENTRY_LIST:
             *type = ACC_INBOUND_MESSAGE_ENTRY_LIST;
             response->entry_list = malloc(sizeof(acc_entry_list_t));
+            offset = acc_read_entry_list(response->entry_list, buffer);
             break;
         case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
             *type = ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR;

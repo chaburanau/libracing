@@ -5,24 +5,26 @@
 #include "udp_socket.h"
 
 typedef struct {
-    int32_t length;
+    uint32_t length;
     char *data;
 } string_t;
 
 typedef struct {
-    int32_t length;
+    uint32_t length;
     int32_t *data;
 } int32_array_t;
 
 typedef struct {
-    int32_t length;
+    uint32_t length;
     uint16_t *data;
 } uint16_array_t;
 
 typedef struct {
-    int32_t length;
+    uint32_t length;
     string_t *data;
 } string_array_t;
+
+
 
 const int8_t ACC_BROADCASTING_PROTOCOL_VERSION = 4;
 const int32_t ACC_SERVER_PORT = 9000;
@@ -55,6 +57,8 @@ typedef enum {
     ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_RECEIVED = 500,
 
     ACC_STATUS_INBOUND_BUFFER_TOO_SMALL = 600,
+
+    ACC_STATUS_MEMORY_ALLOCATION_ERROR = 1000,
 } acc_status_t;
 
 typedef enum {
@@ -228,9 +232,14 @@ typedef struct {
     string_t *first_name;   // Driver's First Name
     string_t *last_name;    // Driver's Last Name
     string_t *short_name;   // Short Driver Name
-    int32_t category;       // DriverCategory Enum
-    int32_t nationality;    // Nationality Enum
+    int8_t category;       // DriverCategory Enum
+    uint16_t nationality;    // Nationality Enum
 } acc_driver_info_t;
+
+typedef struct {
+    uint32_t length;
+    acc_driver_info_t *data;
+} acc_driver_info_array_t;
 
 typedef struct {
     uint16_t car_index;                 // Index from a Cars array
@@ -239,8 +248,8 @@ typedef struct {
     string_t *team_name;                // Team name of the car
     int32_t nationality;                // Nationality Enum
     int32_t race_number;                // Car number
-    int32_t current_driver_index;       // Index from a Drivers array
-    acc_driver_info_t driver_info[4];   // A Drivers array
+    int8_t current_driver_index;       // Index from a Drivers array
+    acc_driver_info_array_t *drivers_info;   // A Drivers array
 } acc_car_info_t;
 
 typedef struct {
@@ -270,22 +279,22 @@ typedef struct {
 } acc_broadcasting_event_t;
 
 typedef struct {
-    int32_t car_index;                  // Index from a Cars array
-    int32_t driver_index;               // Index from a Drivers array
-    int32_t gear;                       // Gear the car is currently in
+    uint16_t car_index;                  // Index from a Cars array
+    uint16_t driver_index;               // Index from a Drivers array
+    int8_t gear;                       // Gear the car is currently in
     float world_position_x;             // X Position on the track
     float world_position_y;             // Y Position on the track
     float yaw;                          // Yaw of the car
-    int32_t car_location;               // CarLocation Enum
-    int32_t speed;                      // Car's speed (in km/h)
-    int32_t position;                   // Car's position
-    int32_t track_position;             // Car's track position
+    int8_t car_location;               // CarLocation Enum
+    uint16_t speed;                      // Car's speed (in km/h)
+    uint16_t position;                   // Car's position
+    uint16_t track_position;             // Car's track position
     float spline_position;              // Car's spline position
     int32_t delta;                      // Car's current delta
     acc_lap_info_t best_session_lap;    // Best lap info
     acc_lap_info_t last_lap;            // Last lap info
     acc_lap_info_t current_lap;         // Current lap info
-    int32_t laps;                       // Laps
+    uint16_t laps;                       // Laps
     uint16_t cup_position;              // Cup position
     int8_t driver_count;                // Number of drivers from this car
 } acc_rt_car_update_t;
@@ -325,6 +334,7 @@ typedef struct {
 } acc_reg_result_t;
 
 typedef struct {
+    int32_t connection_id;
     uint16_array_t *indexes;
 } acc_entry_list_t;
 
