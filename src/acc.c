@@ -168,7 +168,7 @@ int32_t acc_write_change_focus(char **buffer, const acc_change_focus_t *change_f
     return offset != total ? total : -1;
 }
 
-int32_t acc_write_instant_replay_request(char **buffer, acc_req_instant_replay_t *req_instant_replay) {
+int32_t acc_write_instant_replay_request(char **buffer, const acc_req_instant_replay_t *req_instant_replay) {
     int32_t total = 0;
     int32_t offset = 0;
 
@@ -191,6 +191,140 @@ int32_t acc_write_instant_replay_request(char **buffer, acc_req_instant_replay_t
     offset = acc_write_string(*buffer, offset, req_instant_replay->initial_camera);
 
     return offset != total ? total : -1;
+}
+
+int32_t acc_read_string(string_t *string, const char *buffer, int32_t offset) {
+    const uint16_t length = (uint16_t)buffer + offset;
+    offset += sizeof(uint16_t);
+
+    string->length = length;
+    string->data = malloc(length);
+    memcpy(string->data, buffer + offset, length);
+
+    return offset + length;
+}
+
+int32_t acc_read_bool(bool *data, const char *buffer, const int32_t offset) {
+    memcpy(data, buffer + offset, sizeof(bool));
+    return offset + (int32_t)sizeof(bool);
+}
+
+int32_t acc_read_int8_t(int8_t *data, const char *buffer, const int32_t offset) {
+    memcpy(data, buffer + offset, sizeof(int8_t));
+    return offset + (int32_t)sizeof(int8_t);
+}
+
+int32_t acc_read_int16_t(int16_t *data, const char *buffer, const int32_t offset) {
+    memcpy(data, buffer + offset, sizeof(int16_t));
+    return offset + (int32_t)sizeof(int16_t);
+}
+
+int32_t acc_read_int32_t(int32_t *data, const char *buffer, const int32_t offset) {
+    memcpy(data, buffer + offset, sizeof(int32_t));
+    return offset + (int32_t)sizeof(int32_t);
+}
+
+int32_t acc_read_uint16_t(uint16_t *data, const char *buffer, const int32_t offset) {
+    memcpy(data, buffer + offset, sizeof(uint16_t));
+    return offset + (int32_t)sizeof(uint16_t);
+}
+
+int32_t acc_read_float(float *data, const char *buffer, const int32_t offset) {
+    memcpy(data, buffer + offset, sizeof(float));
+    return offset + (int32_t)sizeof(float);
+}
+
+int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
+    offset = acc_read_int32_t(&data->lap_time, buffer, offset); // 1. Lap Time
+    offset = acc_read_uint16_t(&data->car_index, buffer, offset); // 2. Car Index
+    offset = acc_read_uint16_t(&data->driver_index, buffer, offset); // 3. Driver Index
+
+    int8_t splits_size = 0;
+    offset = acc_read_int8_t(&splits_size, buffer, offset); // 4. Splits Size
+    data->splits = malloc(sizeof(int32_array_t));
+    data->splits->length = (int32_t)splits_size;
+    data->splits->data = malloc(sizeof(int32_t) * splits_size);
+
+    for (int index = 0; index < splits_size; index++) {
+        offset = acc_read_int32_t(&data->splits->data[index], buffer, offset); // 5. Split Time
+    }
+
+    offset = acc_read_bool(&data->is_invalid, buffer, offset); // 6. Is Invalid Flag
+    offset = acc_read_bool(&data->is_valid_for_best, buffer, offset); // 7. Is Valid For Best Flag
+
+    bool is_outlap = false;
+    bool is_inlap = false;
+
+    offset = acc_read_bool(&is_outlap, buffer, offset); // 8. Is Outlap Flag
+    offset = acc_read_bool(&is_inlap, buffer, offset); // 9. Is Inlap Flag
+
+    if (is_outlap == true) {
+        data->lap_type = ACC_LAP_TYPE_OUTLAP;
+    } else if (is_inlap == true) {
+        data->lap_type = ACC_LAP_TYPE_INLAP;
+    } else {
+        data->lap_type = ACC_LAP_TYPE_REGULAR;
+    }
+
+    if (data->splits->length < 3) {
+        const int32_t old = data->splits->length;
+        data->splits->length = 3;
+        data->splits->data = realloc(data->splits->data, sizeof(int32_t) * data->splits->length);
+
+        for (int index = old; index < data->splits->length; index++) {
+            data->splits->data[index] = INT32_MAX;
+        }
+    }
+
+    return offset;
+}
+
+int32_t acc_read_registration_result(acc_reg_result_t *result, const char *buffer) {
+    int32_t offset = 1;
+
+    result->error_message = malloc(sizeof(string_t));
+
+    offset = acc_read_int32_t(&result->connection_id, buffer, offset); // 1. Connection ID
+    offset = acc_read_bool(&result->connection_success, buffer, offset); // 2. Connection Success
+    offset = acc_read_bool(&result->is_read_only, buffer, offset); // 3. Is Read-Only
+    offset = acc_read_string(result->error_message, buffer, offset); // 4. Error Message
+
+    return offset;
+}
+
+int32_t acc_read_real_time_update(acc_rt_update_t *update, const char *buffer) {
+    int32_t offset = 1;
+
+    update->active_camera_set = malloc(sizeof(string_t));
+    update->active_camera = malloc(sizeof(string_t));
+    update->current_hud_page = malloc(sizeof(string_t));
+
+    offset = acc_read_uint16_t(&update->event_index, buffer, offset); // 1. Event Index
+    offset = acc_read_uint16_t(&update->session_index, buffer, offset); // 2. Session Index
+    offset = acc_read_int8_t(&update->session_type, buffer, offset); // 3. Session Type
+    offset = acc_read_int8_t(&update->phase, buffer, offset); // 4. Phase
+    offset = acc_read_float(&update->session_time, buffer, offset); // 5. Session Type
+    offset = acc_read_float(&update->session_end_time, buffer, offset); // 6. Session Type
+    offset = acc_read_int32_t(&update->focused_car_index, buffer, offset); // 7. Track Length
+    offset = acc_read_string(update->active_camera_set, buffer, offset); // 8. Track Temperature
+    offset = acc_read_string(update->active_camera, buffer, offset); // 9. Track Rain
+    offset = acc_read_string(update->current_hud_page, buffer, offset); // 10. Track Wind Direction
+
+    offset = acc_read_bool(&update->is_replay_playing, buffer, offset); // 11. Is Replay Playing Flag
+    if (update->is_replay_playing == true) {
+        offset = acc_read_float(&update->replay_session_time, buffer, offset); // 12. Replay Session Time
+        offset = acc_read_float(&update->replay_remaining_time, buffer, offset); // 13. Replay Remaining Time
+    }
+
+    offset = acc_read_float(&update->time_of_day, buffer, offset); // 14. Time of Day
+    offset = acc_read_int8_t(&update->ambient_temperature, buffer, offset); // 15. Ambient Temperature
+    offset = acc_read_int8_t(&update->track_temperature, buffer, offset); // 16. Track Temperature
+    offset = acc_read_int8_t(&update->cloud_level, buffer, offset); // 17. Cloud Level
+    offset = acc_read_int8_t(&update->rain_level, buffer, offset); // 18. Rain Level
+    offset = acc_read_int8_t(&update->wetness_level, buffer, offset); // 19. Wetness Level
+    offset = acc_read_lap(&update->best_session_lap, buffer, offset); // 20. Best Session Lap
+
+    return offset;
 }
 
 acc_client_t *acc_client_create(const char *address, const int port) {
@@ -284,6 +418,51 @@ acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t
         free(buffer);
         fprintf(stderr, "ACC: udp_socket_receive failed\n");
         return ACC_STATUS_SOCKET_ERROR;
+    }
+
+    const int8_t response_type = buffer[0];
+    int32_t offset = 1;
+
+    switch (response_type) {
+        case ACC_INBOUND_MESSAGE_REGISTRATION_RESULT:
+            *type = ACC_INBOUND_MESSAGE_REGISTRATION_RESULT;
+            response->registration_result = malloc(sizeof(acc_reg_result_t));
+            offset = acc_read_registration_result(response->registration_result, buffer);
+            break;
+        case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
+            *type = ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE;
+            response->real_time_update = malloc(sizeof(acc_rt_update_t));
+            break;
+        case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
+            *type = ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE;
+            response->real_time_car_update = malloc(sizeof(acc_rt_car_update_t));
+            break;
+        case ACC_INBOUND_MESSAGE_ENTRY_LIST:
+            *type = ACC_INBOUND_MESSAGE_ENTRY_LIST;
+            response->entry_list = malloc(sizeof(acc_entry_list_t));
+            break;
+        case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
+            *type = ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR;
+            response->entry_list_car = malloc(sizeof(acc_car_info_t));
+            break;
+        case ACC_INBOUND_MESSAGE_TRACK_DATA:
+            *type = ACC_INBOUND_MESSAGE_TRACK_DATA;
+            response->track_data = malloc(sizeof(acc_track_data_t));
+            break;
+        case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
+            *type = ACC_INBOUND_MESSAGE_BROADCASTING_EVENT;
+            response->broadcasting_event = malloc(sizeof(acc_broadcasting_event_t));
+            break;
+        default:
+            fprintf(stderr, "ACC: Invalid Inbound Message Type: %d\n", response_type);
+            free(buffer);
+            return ACC_STATUS_INVALID_INBOUND_MESSAGE_TYPE;
+    }
+
+    if (offset > size) {
+        fprintf(stderr, "ACC: Inbound Buffer too small: %d\n", response_type);
+        free(buffer);
+        return ACC_STATUS_INBOUND_BUFFER_TOO_SMALL;
     }
 
     free(buffer);

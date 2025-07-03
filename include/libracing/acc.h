@@ -5,22 +5,22 @@
 #include "udp_socket.h"
 
 typedef struct {
-    int length;
+    int32_t length;
     char *data;
 } string_t;
 
 typedef struct {
-    int length;
+    int32_t length;
     int32_t *data;
 } int32_array_t;
 
 typedef struct {
-    int length;
+    int32_t length;
     uint16_t *data;
 } uint16_array_t;
 
 typedef struct {
-    int length;
+    int32_t length;
     string_t *data;
 } string_array_t;
 
@@ -49,9 +49,12 @@ typedef enum {
     ACC_STATUS_SEND_ERROR = 101,
     ACC_STATUS_RECEIVE_ERROR = 102,
     ACC_STATUS_INVALID_OUTBOUND_MESSAGE_TYPE = 200,
+    ACC_STATUS_INVALID_INBOUND_MESSAGE_TYPE = 201,
     ACC_STATUS_BUFFER_SIZE_MISMATCH = 300,
     ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_SENT = 400,
     ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_RECEIVED = 500,
+
+    ACC_STATUS_INBOUND_BUFFER_TOO_SMALL = 600,
 } acc_status_t;
 
 typedef enum {
@@ -242,7 +245,7 @@ typedef struct {
 
 typedef struct {
     int32_t lap_time;           // Lap time (in ms)
-    int32_array_t *splits[];    // Lap split times
+    int32_array_t *splits;    // Lap split times
     uint16_t car_index;         // Index from a Cars array
     uint16_t driver_index;      // Index from a Drivers array
     bool is_invalid;            // Flag if a lap is invalid
@@ -288,30 +291,30 @@ typedef struct {
 } acc_rt_car_update_t;
 
 typedef struct {
-    int32_t event_index;                // Index from a Events array
-    int32_t session_index;              // Index from a Session array
-    int32_t phase;                      // SessionPhase enum
-    int32_t session_time;               // Session Time (timespan)
-    int32_t remaining_time;             // Remaining Time (timespan)
-    int32_t time_of_day;                // Time of the day (timespan)
-    float rain_level;                   // Rain level
-    float cloud_level;                  // Cloud level
-    float wetness_level;                // Wetness level
+    uint16_t event_index;                // Index from a Events array
+    uint16_t session_index;              // Index from a Session array
+    int8_t phase;                      // SessionPhase enum
+    float session_time;               // Session Time (timespan)
+    float remaining_time;             // Remaining Time (timespan)
+    float time_of_day;                // Time of the day (timespan)
+    int8_t rain_level;                   // Rain level
+    int8_t cloud_level;                  // Cloud level
+    int8_t wetness_level;                // Wetness level
     acc_lap_info_t best_session_lap;    // Best Session Lap
     uint16_t best_lap_car_index;        // Index from a Cars array
     uint16_t best_lap_driver_index;     // Index from a Drivers array
     int32_t focused_car_index;          // Index from a Cameras array
-    int8_t *active_camera_set;          // Name of the active camera set
-    int8_t *active_camera;              // Name of the active camera
+    string_t *active_camera_set;          // Name of the active camera set
+    string_t *active_camera;              // Name of the active camera
     bool is_replay_playing;             // Flag of replay is playing
     float replay_session_time;          // Replay session time
     float replay_remaining_time;        // Replay remaining time
     float session_remaining_time;       // Session remaining time (timespan)
     float session_end_time;             // Session end time (timespan)
-    int32_t session_type;               // SessionType enum
+    int8_t session_type;               // SessionType enum
     int8_t ambient_temperature;         // Ambient temperature
     int8_t track_temperature;           // Track temperature
-    int8_t *current_hud_page;           // Name of the current HUD page
+    string_t *current_hud_page;           // Name of the current HUD page
 } acc_rt_update_t;
 
 typedef struct {
