@@ -1,6 +1,6 @@
 #include "../include/libracing/udp_socket.h"
 
-#include <stdio.h>
+#include <winerror.h>
 #include <ws2tcpip.h>
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -10,17 +10,18 @@ int udp_socket_address_size = sizeof(SOCKADDR_IN);
 static WSADATA udp_socket_wsa_data;
 static int udp_socket_wsa_users = 0;
 
-udp_socket_t* udp_socket_create(const char* address, const int port) {
-   udp_socket_t* udp_socket = malloc(sizeof(udp_socket_t));
+udp_socket_init_status_t udp_socket_connect(udp_socket_t* udp_socket, const char* address, const int port) {
+   udp_socket_init_status_t status = {0};
+
    udp_socket->_socket = INVALID_SOCKET;
-   udp_socket->_address = { 0 };
+   udp_socket->_address = (SOCKADDR_IN){0};
 
    if (udp_socket_wsa_users == 0) {
       const int wsa_startup_status = WSAStartup(MAKEWORD(2, 2), &udp_socket_wsa_data);
       if (wsa_startup_status != 0) {
-         fprintf(stderr, "UDP Socket: WSAStartup failed. Error: %d; %d\n", WSAGetLastError(), wsa_startup_status);
+         status.last_error = WSAGetLastError();
          udp_socket_close(udp_socket);
-         return NULL;
+         return status;
       }
    }
 
@@ -28,9 +29,9 @@ udp_socket_t* udp_socket_create(const char* address, const int port) {
 
    udp_socket->_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
    if (udp_socket->_socket == INVALID_SOCKET) {
-      fprintf(stderr, "UDP Socket: socket failed. Error: %d\n", WSAGetLastError());
+      status.last_error = WSAGetLastError();
       udp_socket_close(udp_socket);
-      return NULL;
+      return status;
    }
 
    ZeroMemory(&udp_socket->_address, udp_socket_address_size);
@@ -38,16 +39,18 @@ udp_socket_t* udp_socket_create(const char* address, const int port) {
    udp_socket->_address.sin_port = htons(port);
 
    if (inet_pton(AF_INET, address, &udp_socket->_address.sin_addr) != 1) {
-      fprintf(stderr, "UDP Socket: inet_pton failed. Error: %d\n", WSAGetLastError());
+      status.last_error = WSAGetLastError();
       udp_socket_close(udp_socket);
-      return NULL;
+      return status;
    }
 
-   return udp_socket;
+   return status;
 }
 
-void udp_socket_close(udp_socket_t *udp_socket) {
-   if (udp_socket == NULL) return;
+udp_socket_init_status_t udp_socket_close(udp_socket_t *udp_socket) {
+   udp_socket_init_status_t status = {0};
+
+   if (udp_socket == NULL) return status;
 
    if (udp_socket->_socket != INVALID_SOCKET) {
       closesocket(udp_socket->_socket);
@@ -61,31 +64,44 @@ void udp_socket_close(udp_socket_t *udp_socket) {
       ZeroMemory(&udp_socket_wsa_data, sizeof(WSADATA));
    }
 
-   free(udp_socket);
+   status.last_error = WSAGetLastError();
+   return status;
 }
 
-int32_t udp_socket_send(udp_socket_t *udp_socket, const char *data, const int size) {
-   if (udp_socket == NULL) return -1;
-   if (udp_socket_wsa_users == 0) return -1;
+udp_socket_io_status_t udp_socket_send(udp_socket_t *udp_socket, const char *data, const int size) {
+   udp_socket_io_status_t status = {0};
 
-   const int sent = sendto(udp_socket->_socket, data, size, 0, (struct sockaddr *)&udp_socket->_address, udp_socket_address_size);
-   if (sent == SOCKET_ERROR) {
-      fprintf(stderr, "UDP Socket: sendto failed. Error: %d\n", WSAGetLastError());
-      return -1;
+   if (udp_socket_wsa_users == 0) return status;
+   if (udp_socket == NULL) return status;
+
+   status.bytes_sent = sendto(
+      udp_socket->_socket, data, size, 0,
+      (struct sockaddr *)&udp_socket->_address,
+      udp_socket_address_size);
+
+   if (status.bytes_sent == SOCKET_ERROR) {
+      status.last_error = WSAGetLastError();
+      return status;
    }
 
-   return sent;
+   return status;
 }
 
-int32_t udp_socket_receive(udp_socket_t *udp_socket, char *data, const int size) {
-   if (udp_socket == NULL) return -1;
-   if (udp_socket_wsa_users == 0) return -1;
+udp_socket_io_status_t udp_socket_receive(udp_socket_t *udp_socket, char *data, const int size) {
+   udp_socket_io_status_t status = {0};
 
-   const int received = recvfrom(udp_socket->_socket, data, size, 0, (struct sockaddr *)&udp_socket->_address, &udp_socket_address_size);
-   if (received == SOCKET_ERROR) {
-      fprintf(stderr, "UDP Socket: recvfrom failed. Error: %d\n", WSAGetLastError());
-      return -1;
+   if (udp_socket_wsa_users == 0) return status;
+   if (udp_socket == NULL) return status;
+
+   status.bytes_received = recvfrom(
+      udp_socket->_socket, data, size, 0,
+      (struct sockaddr *)&udp_socket->_address,
+      &udp_socket_address_size);
+
+   if (status.bytes_received == SOCKET_ERROR) {
+      status.last_error = WSAGetLastError();
+      return status;
    }
 
-   return received;
+   return status;
 }
