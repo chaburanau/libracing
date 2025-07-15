@@ -2,37 +2,12 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "ac.h"
+#include "types.h"
 #include "udp_socket.h"
 
-typedef struct {
-    uint32_t length;
-    char *data;
-} string_t;
-
-typedef struct {
-    uint32_t length;
-    int32_t *data;
-} int32_array_t;
-
-typedef struct {
-    uint32_t length;
-    uint16_t *data;
-} uint16_array_t;
-
-typedef struct {
-    uint32_t length;
-    string_t *data;
-} string_array_t;
-
-
-
-const int8_t ACC_BROADCASTING_PROTOCOL_VERSION = 4;
-const int32_t ACC_SERVER_PORT = 9000;
-const int32_t ACC_LOCAL_PORT = 9001;
-const char *ACC_SERVER_IP = "127.0.0.1";
-const char *ACC_LOCAL_IP = "127.0.0.1";
-const char *ACC_CONNECTION_PASSWORD = "asd";
-const char *ACC_COMMAND_PASSWORD = "";
+#define ACC_BROADCASTING_PROTOCOL_VERSION 4
 
 typedef enum {
     ACC_STATUS_OK = 0,
@@ -55,9 +30,7 @@ typedef enum {
     ACC_STATUS_BUFFER_SIZE_MISMATCH = 300,
     ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_SENT = 400,
     ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_RECEIVED = 500,
-
     ACC_STATUS_INBOUND_BUFFER_TOO_SMALL = 600,
-
     ACC_STATUS_MEMORY_ALLOCATION_ERROR = 1000,
 } acc_status_t;
 
@@ -119,91 +92,91 @@ typedef enum {
 } acc_broadcasting_event_type_t;
 
 typedef enum {
-    Any = 0,
-    Italy = 1,
-    Germany = 2,
-    France = 3,
-    Spain = 4,
-    GreatBritain = 5,
-    Hungary = 6,
-    Belgium = 7,
-    Switzerland = 8,
-    Austria = 9,
-    Russia = 10,
-    Thailand = 11,
-    Netherlands = 12,
-    Poland = 13,
-    Argentina = 14,
-    Monaco = 15,
-    Ireland = 16,
-    Brazil = 17,
-    SouthAfrica = 18,
-    PuertoRico = 19,
-    Slovakia = 20,
-    Oman = 21,
-    Greece = 22,
-    SaudiArabia = 23,
-    Norway = 24,
-    Turkey = 25,
-    SouthKorea = 26,
-    Lebanon = 27,
-    Armenia = 28,
-    Mexico = 29,
-    Sweden = 30,
-    Finland = 31,
-    Denmark = 32,
-    Croatia = 33,
-    Canada = 34,
-    China = 35,
-    Portugal = 36,
-    Singapore = 37,
-    Indonesia = 38,
-    USA = 39,
-    NewZealand = 40,
-    Australia = 41,
-    SanMarino = 42,
-    UAE = 43,
-    Luxembourg = 44,
-    Kuwait = 45,
-    HongKong = 46,
-    Colombia = 47,
-    Japan = 48,
-    Andorra = 49,
-    Azerbaijan = 50,
-    Bulgaria = 51,
-    Cuba = 52,
-    CzechRepublic = 53,
-    Estonia = 54,
-    Georgia = 55,
-    India = 56,
-    Israel = 57,
-    Jamaica = 58,
-    Latvia = 59,
-    Lithuania = 60,
-    Macau = 61,
-    Malaysia = 62,
-    Nepal = 63,
-    NewCaledonia = 64,
-    Nigeria = 65,
-    NorthernIreland = 66,
-    PapuaNewGuinea = 67,
-    Philippines = 68,
-    Qatar = 69,
-    Romania = 70,
-    Scotland = 71,
-    Serbia = 72,
-    Slovenia = 73,
-    Taiwan = 74,
-    Ukraine = 75,
-    Venezuela = 76,
-    Wales = 77,
-    Iran = 78,
-    Bahrain = 79,
-    Zimbabwe = 80,
-    ChineseTaipei = 81,
-    Chile = 82,
-    Uruguay = 83,
-    Madagascar = 84,
+    ACC_NATIONALITY_ANY = 0,
+    ACC_NATIONALITY_ITALY = 1,
+    ACC_NATIONALITY_GERMANY = 2,
+    ACC_NATIONALITY_FRANCE = 3,
+    ACC_NATIONALITY_SPAIN = 4,
+    ACC_NATIONALITY_GREAT_BRITAIN = 5,
+    ACC_NATIONALITY_HUNGARY = 6,
+    ACC_NATIONALITY_BELGIUM = 7,
+    ACC_NATIONALITY_SWITZERLAND = 8,
+    ACC_NATIONALITY_AUSTRIA = 9,
+    ACC_NATIONALITY_RUSSIA = 10,
+    ACC_NATIONALITY_THAILAND = 11,
+    ACC_NATIONALITY_NETHERLANDS = 12,
+    ACC_NATIONALITY_POLAND = 13,
+    ACC_NATIONALITY_ARGENTINA = 14,
+    ACC_NATIONALITY_MONACO = 15,
+    ACC_NATIONALITY_IRELAND = 16,
+    ACC_NATIONALITY_BRAZIL = 17,
+    ACC_NATIONALITY_SOUTH_AFRICA = 18,
+    ACC_NATIONALITY_PUERTO_RICO = 19,
+    ACC_NATIONALITY_SLOVAKIA = 20,
+    ACC_NATIONALITY_OMAN = 21,
+    ACC_NATIONALITY_GREECE = 22,
+    ACC_NATIONALITY_SAUDI_ARABIA = 23,
+    ACC_NATIONALITY_NORWAY = 24,
+    ACC_NATIONALITY_TURKEY = 25,
+    ACC_NATIONALITY_SOUTH_KOREA = 26,
+    ACC_NATIONALITY_LEBANON = 27,
+    ACC_NATIONALITY_ARMENIA = 28,
+    ACC_NATIONALITY_MEXICO = 29,
+    ACC_NATIONALITY_SWEDEN = 30,
+    ACC_NATIONALITY_FINLAND = 31,
+    ACC_NATIONALITY_DENMARK = 32,
+    ACC_NATIONALITY_CROATIA = 33,
+    ACC_NATIONALITY_CANADA = 34,
+    ACC_NATIONALITY_CHINA = 35,
+    ACC_NATIONALITY_PORTUGAL = 36,
+    ACC_NATIONALITY_SINGAPORE = 37,
+    ACC_NATIONALITY_INDONESIA = 38,
+    ACC_NATIONALITY_USA = 39,
+    ACC_NATIONALITY_NEW_ZEALAND = 40,
+    ACC_NATIONALITY_AUSTRALIA = 41,
+    ACC_NATIONALITY_SAN_MARINO = 42,
+    ACC_NATIONALITY_UAE = 43,
+    ACC_NATIONALITY_LUXEMBOURG = 44,
+    ACC_NATIONALITY_KUWAIT = 45,
+    ACC_NATIONALITY_HONG_KONG = 46,
+    ACC_NATIONALITY_COLOMBIA = 47,
+    ACC_NATIONALITY_JAPAN = 48,
+    ACC_NATIONALITY_ANDORRA = 49,
+    ACC_NATIONALITY_AZERBAIJAN = 50,
+    ACC_NATIONALITY_BULGARIA = 51,
+    ACC_NATIONALITY_CUBA = 52,
+    ACC_NATIONALITY_CZECH_REPUBLIC = 53,
+    ACC_NATIONALITY_ESTONIA = 54,
+    ACC_NATIONALITY_GEORGIA = 55,
+    ACC_NATIONALITY_INDIA = 56,
+    ACC_NATIONALITY_ISRAEL = 57,
+    ACC_NATIONALITY_JAMAICA = 58,
+    ACC_NATIONALITY_LATVIA = 59,
+    ACC_NATIONALITY_LITHUANIA = 60,
+    ACC_NATIONALITY_MACAU = 61,
+    ACC_NATIONALITY_MALAYSIA = 62,
+    ACC_NATIONALITY_NEPAL = 63,
+    ACC_NATIONALITY_NEW_CALEDONIA = 64,
+    ACC_NATIONALITY_NIGERIA = 65,
+    ACC_NATIONALITY_NORTHERN_IRELAND = 66,
+    ACC_NATIONALITY_PAPUA_NEW_GUINEA = 67,
+    ACC_NATIONALITY_PHILIPPINES = 68,
+    ACC_NATIONALITY_QATAR = 69,
+    ACC_NATIONALITY_ROMANIA = 70,
+    ACC_NATIONALITY_SCOTLAND = 71,
+    ACC_NATIONALITY_SERBIA = 72,
+    ACC_NATIONALITY_SLOVENIA = 73,
+    ACC_NATIONALITY_TAIWAN = 74,
+    ACC_NATIONALITY_UKRAINE = 75,
+    ACC_NATIONALITY_VENEZUELA = 76,
+    ACC_NATIONALITY_WALES = 77,
+    ACC_NATIONALITY_IRAN = 78,
+    ACC_NATIONALITY_BAHRAIN = 79,
+    ACC_NATIONALITY_ZIMBABWE = 80,
+    ACC_NATIONALITY_CHINESE_TAIPEI = 81,
+    ACC_NATIONALITY_CHILE = 82,
+    ACC_NATIONALITY_URUGUAY = 83,
+    ACC_NATIONALITY_MADAGASCAR = 84,
 } acc_nationality_t;
 
 typedef enum {
@@ -232,12 +205,12 @@ typedef struct {
     string_t *first_name;   // Driver's First Name
     string_t *last_name;    // Driver's Last Name
     string_t *short_name;   // Short Driver Name
-    int8_t category;       // DriverCategory Enum
-    uint16_t nationality;    // Nationality Enum
+    int8_t category;        // DriverCategory Enum
+    uint16_t nationality;   // Nationality Enum
 } acc_driver_info_t;
 
 typedef struct {
-    uint32_t length;
+    uint32_t size;
     acc_driver_info_t *data;
 } acc_driver_info_array_t;
 
@@ -385,7 +358,7 @@ typedef union {
     acc_change_hud_page_t    *request_hud_page;
     acc_change_focus_t       *change_focus;
     acc_req_instant_replay_t *request_instant_replay;
-} acc_server_request_t;
+} acc_server_request_data_t;
 
 typedef union {
     acc_reg_result_t         *registration_result;
@@ -395,15 +368,22 @@ typedef union {
     acc_car_info_t           *entry_list_car;
     acc_track_data_t         *track_data;
     acc_broadcasting_event_t *broadcasting_event;
-} acc_server_response_t;
+} acc_server_response_data_t;
 
 typedef struct {
-    int connection_id;
-    udp_socket_t *socket;
-} acc_client_t;
+	acc_outbound_message_type_t type;
+	acc_server_request_data_t data;
+} acc_server_request_t;
+
+typedef struct {
+	acc_inbound_message_type_t type;
+	acc_server_response_data_t data;
+} acc_server_response_t;
+
+typedef struct ACClient acc_client_t;
 
 acc_client_t *acc_client_create(const char *address, int port);
-void acc_client_close(acc_client_t *client);
+void acc_client_destroy(acc_client_t *client);
 
-acc_status_t acc_client_send(acc_client_t *client, acc_outbound_message_type_t type, acc_server_request_t request);
-acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t *type, acc_server_response_t *response);
+acc_status_t acc_client_send(acc_client_t *client, acc_server_request_t *request);
+acc_status_t acc_client_receive(acc_client_t *client, acc_server_response_t *response);

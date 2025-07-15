@@ -1,6 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../include/libracing/acc.h"
+
+typedef struct ACClient {
+    int connection_id;
+    udp_socket_t *socket;
+} acc_client_t;
 
 int acc_write_int8_t(char *buffer, int32_t offset, const int8_t type) {
     buffer[offset++] = type;
@@ -44,7 +50,7 @@ int acc_write_float(char *buffer, int offset, const float data) {
 }
 
 int acc_write_string(char *buffer, int offset, const string_t *string) {
-    for (int i = 0; i < string->length; i++) {
+    for (int i = 0; i < string->size; i++) {
         buffer[offset++] = string->data[i];
         buffer[offset++] = '\0';
     }
@@ -58,10 +64,10 @@ int32_t acc_write_register_application(char **buffer, const acc_reg_app_t *reg_a
 
     total += sizeof(int8_t);                            // 1. Request Type
     total += sizeof(int8_t);                            // 2. Broadcasting Version
-    total += reg_app->display_name->length * 2;         // 3. Display Name
-    total += reg_app->connection_password->length * 2;  // 4. Connection Password
+    total += reg_app->display_name->size * 2;         // 3. Display Name
+    total += reg_app->connection_password->size * 2;  // 4. Connection Password
     total += sizeof(int32_t);                           // 5. Update Interval
-    total += reg_app->command_password->length * 2;     // 6. Command Password
+    total += reg_app->command_password->size * 2;     // 6. Command Password
 
     *buffer = malloc(total);
 
@@ -122,7 +128,7 @@ int32_t acc_write_change_hud_page(char **buffer, const acc_change_hud_page_t *ch
 
     total += sizeof(int8_t);    // 1. Request Type
     total += sizeof(int32_t);   // 2. Connection ID
-    total += change_hud_page->hud_page->length * 2; // 3. HUD Page
+    total += change_hud_page->hud_page->size * 2; // 3. HUD Page
 
     *buffer = malloc(total);
 
@@ -142,8 +148,8 @@ int32_t acc_write_change_focus(char **buffer, const acc_change_focus_t *change_f
     total += sizeof(int8_t);                                                                // 3.1. Car Index Indicator
     if (change_focus->car_index != NULL) total += sizeof(uint16_t);                         // 3.2. Car Index
     total += sizeof(int8_t);                                                                // 4.1. Camera Indicator
-    if (change_focus->camera_set != NULL) total += change_focus->camera_set->length * 2;    // 4.2. Camera Set
-    if (change_focus->camera != NULL) total += change_focus->camera->length * 2;            // 4.2. Camera
+    if (change_focus->camera_set != NULL) total += change_focus->camera_set->size * 2;    // 4.2. Camera Set
+    if (change_focus->camera != NULL) total += change_focus->camera->size * 2;            // 4.2. Camera
 
     *buffer = malloc(total);
 
@@ -177,8 +183,8 @@ int32_t acc_write_instant_replay_request(char **buffer, const acc_req_instant_re
     total += sizeof(float);                                         // 3. Start Session Time
     total += sizeof(float);                                         // 4. Duration
     total += sizeof(int32_t);                                       // 5. Car Index Indicator
-    total += req_instant_replay->initial_camera_set->length * 2;    // 6. Initial Camera Set
-    total += req_instant_replay->initial_camera->length * 2;        // 7. Initial Camera
+    total += req_instant_replay->initial_camera_set->size * 2;    // 6. Initial Camera Set
+    total += req_instant_replay->initial_camera->size * 2;        // 7. Initial Camera
 
     *buffer = malloc(total);
 
@@ -194,14 +200,14 @@ int32_t acc_write_instant_replay_request(char **buffer, const acc_req_instant_re
 }
 
 int32_t acc_read_string(string_t *string, const char *buffer, int32_t offset) {
-    const uint16_t length = (uint16_t)buffer + offset;
+    const uint16_t size = (uint16_t)buffer + offset;
     offset += sizeof(uint16_t);
 
-    string->length = length;
-    string->data = malloc(length);
-    memcpy(string->data, buffer + offset, length);
+    string->size = size;
+    string->data = malloc(size);
+    memcpy(string->data, buffer + offset, size);
 
-    return offset + length;
+    return offset + size;
 }
 
 int32_t acc_read_bool(bool *data, const char *buffer, const int32_t offset) {
@@ -242,7 +248,7 @@ int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
     int8_t splits_size = 0;
     offset = acc_read_int8_t(&splits_size, buffer, offset); // 4. Splits Size
     data->splits = malloc(sizeof(int32_array_t));
-    data->splits->length = (uint32_t)splits_size;
+    data->splits->size = (uint32_t)splits_size;
     data->splits->data = malloc(sizeof(int32_t) * splits_size);
 
     for (int index = 0; index < splits_size; index++) {
@@ -266,12 +272,12 @@ int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
         data->lap_type = ACC_LAP_TYPE_REGULAR;
     }
 
-    if (data->splits->length < 3) {
-        const uint32_t old = data->splits->length;
-        data->splits->length = 3;
-        data->splits->data = realloc(data->splits->data, sizeof(int32_t) * data->splits->length);
+    if (data->splits->size < 3) {
+        const uint32_t old = data->splits->size;
+        data->splits->size = 3;
+        data->splits->data = realloc(data->splits->data, sizeof(int32_t) * data->splits->size);
 
-        for (uint32_t index = old; index < data->splits->length; index++) {
+        for (uint32_t index = old; index < data->splits->size; index++) {
             data->splits->data[index] = INT32_MAX;
         }
     }
@@ -359,7 +365,7 @@ int32_t acc_read_entry_list(acc_entry_list_t *list, const char *buffer) {
     offset = acc_read_uint16_t(&size, buffer, offset); // 2. Entries Size
 
     list->indexes = malloc(sizeof(uint16_array_t));
-    list->indexes->length = (uint32_t)size;
+    list->indexes->size = (uint32_t)size;
     list->indexes->data = malloc(sizeof(uint16_t) * size);
 
     for (int i = 0; i < size; i++) {
@@ -382,7 +388,7 @@ int32_t acc_read_entry_list_car(acc_car_info_t *data, const char *buffer) {
     offset = acc_read_int8_t(&size, buffer, offset); // 7. Drivers Size
 
     data->drivers_info = malloc(sizeof(acc_driver_info_array_t));
-    data->drivers_info->length = (uint32_t)size;
+    data->drivers_info->size = (uint32_t)size;
     data->drivers_info->data = malloc(sizeof(acc_driver_info_t) * size);
 
     for (int i = 0; i < size; i++) {
@@ -399,13 +405,13 @@ int32_t acc_read_entry_list_car(acc_car_info_t *data, const char *buffer) {
 acc_client_t *acc_client_create(const char *address, const int port) {
     acc_client_t *client = malloc(sizeof(acc_client_t));
     if (client == NULL) {
-        acc_client_close(client);
+        acc_client_destroy(client);
         return NULL;
     }
 
     client->socket = udp_socket_create(address, port);
     if (client->socket == NULL) {
-        acc_client_close(client);
+        acc_client_destroy(client);
         return NULL;
     }
 
@@ -414,41 +420,41 @@ acc_client_t *acc_client_create(const char *address, const int port) {
 
 void acc_client_close(acc_client_t *client) {
     if (client == NULL) return;
-    if (client->socket != NULL) udp_socket_close(client->socket);
+    if (client->socket != NULL) udp_socket_destroy(client->socket);
     free(client);
 }
 
-acc_status_t acc_client_send(acc_client_t *client, const acc_outbound_message_type_t type, acc_server_request_t request) {
+acc_status_t acc_client_send(acc_client_t *client, acc_server_request_t *request) {
     if (client == NULL) return ACC_STATUS_CLIENT_NOT_INITIALIZED;
     if (client->socket == NULL) return ACC_STATUS_CLIENT_NOT_INITIALIZED;
 
     char *buffer = NULL;
     int32_t total = 0;
 
-    switch (type) {
+    switch (request->type) {
         case ACC_OUTBOUND_MESSAGE_REGISTER_COMMAND_APPLICATION:
-            total = acc_write_register_application(&buffer, request.register_application);
+            total = acc_write_register_application(&buffer, request->data.register_application);
             break;
         case ACC_OUTBOUND_MESSAGE_UNREGISTER_COMMAND_APPLICATION:
-            total = acc_write_unregister_application(&buffer, request.unregister_application);
+            total = acc_write_unregister_application(&buffer, request->data.unregister_application);
             break;
         case ACC_OUTBOUND_MESSAGE_REQUEST_ENTRY_LIST:
-            total = acc_write_request_entry_list(&buffer, request.request_entry_list);
+            total = acc_write_request_entry_list(&buffer, request->data.request_entry_list);
             break;
         case ACC_OUTBOUND_MESSAGE_REQUEST_TRACK_DATA:
-            total = acc_write_request_track_data(&buffer, request.request_track_data);
+            total = acc_write_request_track_data(&buffer, request->data.request_track_data);
             break;
         case ACC_OUTBOUND_MESSAGE_CHANGE_HUD_PAGE:
-            total = acc_write_change_hud_page(&buffer, request.request_hud_page);
+            total = acc_write_change_hud_page(&buffer, request->data.request_hud_page);
             break;
         case ACC_OUTBOUND_MESSAGE_CHANGE_FOCUS:
-            total = acc_write_change_focus(&buffer, request.change_focus);
+            total = acc_write_change_focus(&buffer, request->data.change_focus);
             break;
         case ACC_OUTBOUND_MESSAGE_INSTANT_REPLAY_REQUEST:
-            total = acc_write_instant_replay_request(&buffer, request.request_instant_replay);
+            total = acc_write_instant_replay_request(&buffer, request->data.request_instant_replay);
             break;
         default:
-            fprintf(stderr, "ACC: Invalid Outbound Message Type: %d\n", type);
+            fprintf(stderr, "ACC: Invalid Outbound Message Type: %d\n", request->type);
             return ACC_STATUS_INVALID_OUTBOUND_MESSAGE_TYPE;
     }
 
@@ -475,7 +481,7 @@ acc_status_t acc_client_send(acc_client_t *client, const acc_outbound_message_ty
     return sent == total ? ACC_STATUS_OK : ACC_STATUS_SEND_ERROR;
 }
 
-acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t *type, acc_server_response_t *response) {
+acc_status_t acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
     if (client == NULL) return ACC_STATUS_CLIENT_NOT_INITIALIZED;
     if (client->socket == NULL) return ACC_STATUS_CLIENT_NOT_INITIALIZED;
 
@@ -498,36 +504,36 @@ acc_status_t acc_client_receive(acc_client_t *client, acc_inbound_message_type_t
 
     switch (response_type) {
         case ACC_INBOUND_MESSAGE_REGISTRATION_RESULT:
-            *type = ACC_INBOUND_MESSAGE_REGISTRATION_RESULT;
-            response->registration_result = malloc(sizeof(acc_reg_result_t));
-            offset = acc_read_registration_result(response->registration_result, buffer);
+            response->type = ACC_INBOUND_MESSAGE_REGISTRATION_RESULT;
+            response->data.registration_result = malloc(sizeof(acc_reg_result_t));
+            offset = acc_read_registration_result(response->data.registration_result, buffer);
             break;
         case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
-            *type = ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE;
-            response->real_time_update = malloc(sizeof(acc_rt_update_t));
-            offset = acc_read_real_time_update(response->real_time_update, buffer);
+            response->type = ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE;
+            response->data.real_time_update = malloc(sizeof(acc_rt_update_t));
+            offset = acc_read_real_time_update(response->data.real_time_update, buffer);
             break;
         case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
-            *type = ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE;
-            response->real_time_car_update = malloc(sizeof(acc_rt_car_update_t));
-            offset = acc_read_real_time_car_update(response->real_time_car_update, buffer);
+            response->type = ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE;
+            response->data.real_time_car_update = malloc(sizeof(acc_rt_car_update_t));
+            offset = acc_read_real_time_car_update(response->data.real_time_car_update, buffer);
             break;
         case ACC_INBOUND_MESSAGE_ENTRY_LIST:
-            *type = ACC_INBOUND_MESSAGE_ENTRY_LIST;
-            response->entry_list = malloc(sizeof(acc_entry_list_t));
-            offset = acc_read_entry_list(response->entry_list, buffer);
+            response->type = ACC_INBOUND_MESSAGE_ENTRY_LIST;
+            response->data.entry_list = malloc(sizeof(acc_entry_list_t));
+            offset = acc_read_entry_list(response->data.entry_list, buffer);
             break;
         case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
-            *type = ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR;
-            response->entry_list_car = malloc(sizeof(acc_car_info_t));
+            response->type = ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR;
+            response->data.entry_list_car = malloc(sizeof(acc_car_info_t));
             break;
         case ACC_INBOUND_MESSAGE_TRACK_DATA:
-            *type = ACC_INBOUND_MESSAGE_TRACK_DATA;
-            response->track_data = malloc(sizeof(acc_track_data_t));
+            response->type = ACC_INBOUND_MESSAGE_TRACK_DATA;
+            response->data.track_data = malloc(sizeof(acc_track_data_t));
             break;
         case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
-            *type = ACC_INBOUND_MESSAGE_BROADCASTING_EVENT;
-            response->broadcasting_event = malloc(sizeof(acc_broadcasting_event_t));
+            response->type = ACC_INBOUND_MESSAGE_BROADCASTING_EVENT;
+            response->data.broadcasting_event = malloc(sizeof(acc_broadcasting_event_t));
             break;
         default:
             fprintf(stderr, "ACC: Invalid Inbound Message Type: %d\n", response_type);
