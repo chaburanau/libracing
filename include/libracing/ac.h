@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "udp_socket.h"
-
 #define AC_IDENTIFIER 1
 #define AC_SERVER_VERSION 1
 #define AC_SERVER_PORT 9996
@@ -20,11 +18,6 @@ typedef enum {
 	AC_STATUS_RECEIVE_ERROR = 400,
 	AC_STATUS_RECEIVED_INVALID_DATA = 401,
 } ac_status_t;
-
-typedef struct {
-	ac_status_t status;
-	int32_t underlying_error;
-} ac_result_t;
 
 typedef enum {
 	AC_OPERATION_HANDSHAKE = 0,
@@ -129,15 +122,13 @@ typedef struct {
 	ac_event_data_t data;
 } ac_event_t;
 
-typedef struct {
-	udp_socket_t* _udp_socket;
-	bool _handshake_performed;
-} ac_client_t;
+typedef struct AssettoCorsaClient ac_client_t;
 
-ac_result_t ac_client_connect(ac_client_t *client);
-ac_result_t ac_client_close(ac_client_t *client);
-ac_result_t ac_client_handshake(ac_client_t *client);
-ac_result_t ac_client_subscribe_update(ac_client_t *client);
-ac_result_t ac_client_subscribe_spot(ac_client_t *client);
-ac_result_t ac_client_dismiss(ac_client_t *client);
-ac_result_t ac_client_receive(ac_client_t *client, ac_event_t *event);
+ac_client_t *ac_client_create(const char *address, int port);
+void ac_client_destroy(ac_client_t *client);
+
+ac_status_t ac_client_handshake(ac_client_t *client);
+ac_status_t ac_client_subscribe_update(ac_client_t *client);
+ac_status_t ac_client_subscribe_spot(ac_client_t *client);
+ac_status_t ac_client_dismiss(ac_client_t *client);
+ac_status_t ac_client_receive(ac_client_t *client, ac_event_t *event);
