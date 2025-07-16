@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <stdbool.h>
 #include "types.h"
 
-#define IRACING_VER  2
+#define IRACING_VER 2
 #define IRACING_MAX_BUFFERS 4
 #define IRACING_MAX_STRING 32
 #define IRACING_MAX_DESC 64
