@@ -202,11 +202,11 @@ typedef enum {
 } acc_inbound_message_type_t;
 
 typedef struct {
-    string_t *first_name;   // Driver's First Name
-    string_t *last_name;    // Driver's Last Name
-    string_t *short_name;   // Short Driver Name
-    int8_t category;        // DriverCategory Enum
-    uint16_t nationality;   // Nationality Enum
+    string_t *first_name;	// Driver's First Name
+    string_t *last_name;	// Driver's Last Name
+    string_t *short_name;	// Short Driver Name
+    int8_t category;		// DriverCategory Enum
+    uint16_t nationality;	// Nationality Enum
 } acc_driver_info_t;
 
 typedef struct {
@@ -215,88 +215,89 @@ typedef struct {
 } acc_driver_info_array_t;
 
 typedef struct {
-    uint16_t car_index;                 // Index from a Cars array
-    int8_t car_model_type;              // Model type of the car
-    int8_t cup_category;                // Cup category
-    string_t *team_name;                // Team name of the car
-    int32_t nationality;                // Nationality Enum
-    int32_t race_number;                // Car number
-    int8_t current_driver_index;       // Index from a Drivers array
-    acc_driver_info_array_t *drivers_info;   // A Drivers array
+    uint16_t car_index;						// Index from a Cars array
+    int8_t car_model_type;					// Model type of the car
+    int8_t cup_category;					// Cup category
+    string_t *team_name;					// Team name of the car
+    int32_t nationality;					// Nationality Enum
+    int32_t race_number;					// Car number
+    int8_t current_driver_index;			// Index from a Drivers array
+    acc_driver_info_array_t *drivers_info;	// A Drivers array
 } acc_car_info_t;
 
 typedef struct {
-    int32_t lap_time;           // Lap time (in ms)
-    int32_array_t *splits;    // Lap split times
-    uint16_t car_index;         // Index from a Cars array
-    uint16_t driver_index;      // Index from a Drivers array
-    bool is_invalid;            // Flag if a lap is invalid
-    bool is_valid_for_best;     // Flag if a lap can be counted towards the best attempt
-    int32_t lap_type;           // LapType Enum
+    int32_t lap_time;			// Lap time (in ms)
+    int32_array_t *splits;		// Lap split times
+    uint16_t car_index;			// Index from a Cars array
+    uint16_t driver_index;		// Index from a Drivers array
+    bool is_invalid;			// Flag if a lap is invalid
+    bool is_valid_for_best;		// Flag if a lap can be counted towards the best attempt
+    int32_t lap_type;			// LapType Enum
 } acc_lap_info_t;
 
 typedef struct {
-    string_t *track_name;           // Name of the track
-    int32_t track_id;               // ID of the track
-    float track_length;             // Track length (in meters)
-    string_array_t *camera_sets;    // Available Camera Sets (array)
-    string_array_t *cameras;        // Available Cameras (array). Format is "{camera_sets_index}:{camera_name}"
-    string_array_t *hud_pages;      // Available HUD Pages (array)
+    int32_t connection_id;			// Connection ID
+    string_t *track_name;			// Name of the track
+    int32_t track_id;				// ID of the track
+    int32_t track_length;			// Track length (in meters)
+    string_array_t *camera_sets;	// Available Camera Sets (array)
+    string_array_t *cameras;		// Available Cameras (array). Format is "{camera_sets_index}:{camera_name}"
+    string_array_t *hud_pages;		// Available HUD Pages (array)
 } acc_track_data_t;
 
 typedef struct {
-    int32_t type;                // Broadcasting Event Type
-    string_t *message;           // Broadcasting Event Message
-    int32_t time;                // Broadcasting Event Time (in ms)
-    int32_t car_index;           // Index from a Cars array
+    int8_t type;			// Broadcasting Event Type
+    string_t *message;		// Broadcasting Event Message
+    int32_t time;			// Broadcasting Event Time (in ms)
+    int32_t car_index;		// Index from a Cars array
 } acc_broadcasting_event_t;
 
 typedef struct {
-    uint16_t car_index;                  // Index from a Cars array
-    uint16_t driver_index;               // Index from a Drivers array
-    int8_t gear;                       // Gear the car is currently in
-    float world_position_x;             // X Position on the track
-    float world_position_y;             // Y Position on the track
-    float yaw;                          // Yaw of the car
-    int8_t car_location;               // CarLocation Enum
-    uint16_t speed;                      // Car's speed (in km/h)
-    uint16_t position;                   // Car's position
-    uint16_t track_position;             // Car's track position
-    float spline_position;              // Car's spline position
-    int32_t delta;                      // Car's current delta
-    acc_lap_info_t best_session_lap;    // Best lap info
-    acc_lap_info_t last_lap;            // Last lap info
-    acc_lap_info_t current_lap;         // Current lap info
-    uint16_t laps;                       // Laps
-    uint16_t cup_position;              // Cup position
-    int8_t driver_count;                // Number of drivers from this car
+    uint16_t car_index;					// Index from a Cars array
+    uint16_t driver_index;				// Index from a Drivers array
+    int8_t gear;						// Gear the car is currently in
+    float world_position_x;				// X Position on the track
+    float world_position_y;				// Y Position on the track
+    float yaw;							// Yaw of the car
+    int8_t car_location;				// CarLocation Enum
+    uint16_t speed;						// Car's speed (in km/h)
+    uint16_t position;					// Car's position
+    uint16_t track_position;			// Car's track position
+    float spline_position;				// Car's spline position
+    int32_t delta;						// Car's current delta
+    acc_lap_info_t best_session_lap;	// Best lap info
+    acc_lap_info_t last_lap;			// Last lap info
+    acc_lap_info_t current_lap;			// Current lap info
+    uint16_t laps;						// Laps
+    uint16_t cup_position;				// Cup position
+    int8_t driver_count;				// Number of drivers from this car
 } acc_rt_car_update_t;
 
 typedef struct {
-    uint16_t event_index;                // Index from a Events array
-    uint16_t session_index;              // Index from a Session array
-    int8_t phase;                      // SessionPhase enum
-    float session_time;               // Session Time (timespan)
-    float remaining_time;             // Remaining Time (timespan)
-    float time_of_day;                // Time of the day (timespan)
-    int8_t rain_level;                   // Rain level
-    int8_t cloud_level;                  // Cloud level
-    int8_t wetness_level;                // Wetness level
-    acc_lap_info_t best_session_lap;    // Best Session Lap
-    uint16_t best_lap_car_index;        // Index from a Cars array
-    uint16_t best_lap_driver_index;     // Index from a Drivers array
-    int32_t focused_car_index;          // Index from a Cameras array
-    string_t *active_camera_set;          // Name of the active camera set
-    string_t *active_camera;              // Name of the active camera
-    bool is_replay_playing;             // Flag of replay is playing
-    float replay_session_time;          // Replay session time
-    float replay_remaining_time;        // Replay remaining time
-    float session_remaining_time;       // Session remaining time (timespan)
-    float session_end_time;             // Session end time (timespan)
-    int8_t session_type;               // SessionType enum
-    int8_t ambient_temperature;         // Ambient temperature
-    int8_t track_temperature;           // Track temperature
-    string_t *current_hud_page;           // Name of the current HUD page
+    uint16_t event_index;				// Index from a Events array
+    uint16_t session_index;				// Index from a Session array
+    int8_t phase;						// SessionPhase enum
+    float session_time;					// Session Time (timespan)
+    float remaining_time;				// Remaining Time (timespan)
+    float time_of_day;					// Time of the day (timespan)
+    int8_t rain_level;					// Rain level
+    int8_t cloud_level;					// Cloud level
+    int8_t wetness_level;				// Wetness level
+    acc_lap_info_t best_session_lap;	// Best Session Lap
+    uint16_t best_lap_car_index;		// Index from a Cars array
+    uint16_t best_lap_driver_index;		// Index from a Drivers array
+    int32_t focused_car_index;			// Index from a Cameras array
+    string_t *active_camera_set;		// Name of the active camera set
+    string_t *active_camera;			// Name of the active camera
+    bool is_replay_playing;				// Flag of replay is playing
+    float replay_session_time;			// Replay session time
+    float replay_remaining_time;		// Replay remaining time
+    float session_remaining_time;		// Session remaining time (timespan)
+    float session_end_time;				// Session end time (timespan)
+    int8_t session_type;				// SessionType enum
+    int8_t ambient_temperature;			// Ambient temperature
+    int8_t track_temperature;			// Track temperature
+    string_t *current_hud_page;			// Name of the current HUD page
 } acc_rt_update_t;
 
 typedef struct {

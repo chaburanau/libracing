@@ -1,5 +1,7 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../include/libracing/acc.h"
 
@@ -13,8 +15,8 @@ int acc_write_int8_t(char *buffer, int32_t offset, const int8_t type) {
     return offset;
 }
 
-int acc_write_uint16_t(char *buffer, int32_t offset, const uint16_t data) {
-    const size_t size = sizeof(uint16_t);
+int acc_write_int32_t(char *buffer, int32_t offset, const int32_t data) {
+    const size_t size = sizeof(int32_t);
     char bytes[size];
     memcpy(bytes, &data, size);
 
@@ -25,8 +27,8 @@ int acc_write_uint16_t(char *buffer, int32_t offset, const uint16_t data) {
     return offset;
 }
 
-int acc_write_int32_t(char *buffer, int32_t offset, const int32_t data) {
-    const size_t size = sizeof(int32_t);
+int acc_write_uint16_t(char *buffer, int32_t offset, const uint16_t data) {
+    const size_t size = sizeof(uint16_t);
     char bytes[size];
     memcpy(bytes, &data, size);
 
@@ -49,7 +51,14 @@ int acc_write_float(char *buffer, int offset, const float data) {
     return offset;
 }
 
+// TODO :: check this
 int acc_write_string(char *buffer, int offset, const string_t *string) {
+    if (string == NULL) {
+		return acc_write_uint16_t(buffer, offset, 0);
+	}
+
+    offset = acc_write_uint16_t(buffer, offset, string->size);
+
     for (int i = 0; i < string->size; i++) {
         buffer[offset++] = string->data[i];
         buffer[offset++] = '\0';
@@ -62,12 +71,12 @@ int32_t acc_write_register_application(char **buffer, const acc_reg_app_t *reg_a
     int32_t total = 0;
     int32_t offset = 0;
 
-    total += sizeof(int8_t);                            // 1. Request Type
-    total += sizeof(int8_t);                            // 2. Broadcasting Version
-    total += reg_app->display_name->size * 2;         // 3. Display Name
-    total += reg_app->connection_password->size * 2;  // 4. Connection Password
-    total += sizeof(int32_t);                           // 5. Update Interval
-    total += reg_app->command_password->size * 2;     // 6. Command Password
+    total += sizeof(int8_t);							// 1. Request Type
+    total += sizeof(int8_t);							// 2. Broadcasting Version
+    total += reg_app->display_name->size * 2;			// 3. Display Name
+    total += reg_app->connection_password->size * 2;	// 4. Connection Password
+    total += sizeof(int32_t);							// 5. Update Interval
+    total += reg_app->command_password->size * 2;		// 6. Command Password
 
     *buffer = malloc(total);
 
@@ -78,7 +87,7 @@ int32_t acc_write_register_application(char **buffer, const acc_reg_app_t *reg_a
     offset = acc_write_int32_t(*buffer, offset, reg_app->update_interval);
     offset = acc_write_string(*buffer, offset, reg_app->command_password);
 
-    return offset != total ? total : -1;
+    return offset == total ? total : -1;
 }
 
 int32_t acc_write_unregister_application(char **buffer, const acc_unreg_app_t *unreg_app) {
@@ -89,46 +98,46 @@ int32_t acc_write_unregister_application(char **buffer, const acc_unreg_app_t *u
 
     offset = acc_write_int8_t(*buffer, offset, ACC_OUTBOUND_MESSAGE_UNREGISTER_COMMAND_APPLICATION);
 
-    return offset != total ? total : -1;
+    return offset == total ? total : -1;
 }
 
 int32_t acc_write_request_entry_list(char **buffer, const acc_req_entry_list_t *req_entry_list) {
     int32_t total = 0;
     int32_t offset = 0;
 
-    total += sizeof(int8_t);    // 1. Request Type
-    total += sizeof(int32_t);   // 2. Connection ID
+    total += sizeof(int8_t);	// 1. Request Type
+    total += sizeof(int32_t);	// 2. Connection ID
 
     *buffer = malloc(total);
 
     offset = acc_write_int8_t(*buffer, offset, ACC_OUTBOUND_MESSAGE_REQUEST_ENTRY_LIST);
     offset = acc_write_int32_t(*buffer, offset, req_entry_list->connection_id);
 
-    return offset != total ? total : -1;
+    return offset == total ? total : -1;
 }
 
 int32_t acc_write_request_track_data(char **buffer, const acc_req_track_data_t *req_track_data) {
     int32_t total = 0;
     int32_t offset = 0;
 
-    total += sizeof(int8_t);    // 1. Request Type
-    total += sizeof(int32_t);   // 2. Connection ID
+    total += sizeof(int8_t);	// 1. Request Type
+    total += sizeof(int32_t);	// 2. Connection ID
 
     *buffer = malloc(total);
 
     offset = acc_write_int8_t(*buffer, offset, ACC_OUTBOUND_MESSAGE_REQUEST_TRACK_DATA);
     offset = acc_write_int32_t(*buffer, offset, req_track_data->connection_id);
 
-    return offset != total ? total : -1;
+    return offset == total ? total : -1;
 }
 
 int32_t acc_write_change_hud_page(char **buffer, const acc_change_hud_page_t *change_hud_page) {
     int32_t total = 0;
     int32_t offset = 0;
 
-    total += sizeof(int8_t);    // 1. Request Type
-    total += sizeof(int32_t);   // 2. Connection ID
-    total += change_hud_page->hud_page->size * 2; // 3. HUD Page
+    total += sizeof(int8_t);						// 1. Request Type
+    total += sizeof(int32_t);						// 2. Connection ID
+    total += change_hud_page->hud_page->size * 2;	// 3. HUD Page
 
     *buffer = malloc(total);
 
@@ -136,55 +145,54 @@ int32_t acc_write_change_hud_page(char **buffer, const acc_change_hud_page_t *ch
     offset = acc_write_int32_t(*buffer, offset, change_hud_page->connection_id);
     offset = acc_write_string(*buffer, offset, change_hud_page->hud_page);
 
-    return offset != total ? total : -1;
+    return offset == total ? total : -1;
 }
 
 int32_t acc_write_change_focus(char **buffer, const acc_change_focus_t *change_focus) {
     int32_t total = 0;
     int32_t offset = 0;
 
-    total += sizeof(int8_t);                                                                // 1. Request Type
-    total += sizeof(int32_t);                                                               // 2. Connection ID
-    total += sizeof(int8_t);                                                                // 3.1. Car Index Indicator
-    if (change_focus->car_index != NULL) total += sizeof(uint16_t);                         // 3.2. Car Index
-    total += sizeof(int8_t);                                                                // 4.1. Camera Indicator
-    if (change_focus->camera_set != NULL) total += change_focus->camera_set->size * 2;    // 4.2. Camera Set
-    if (change_focus->camera != NULL) total += change_focus->camera->size * 2;            // 4.2. Camera
+    bool has_car_index = change_focus->car_index != NULL;
+    bool has_cameras = change_focus->camera_set != NULL || change_focus->camera != NULL;
+
+    total += sizeof(int8_t);										// 1. Request Type
+    total += sizeof(int32_t);										// 2. Connection ID
+    total += sizeof(int8_t);										// 3.1. Car Index Indicator
+    if (has_car_index) total += sizeof(uint16_t);					// 3.2. Car Index
+    total += sizeof(int8_t);										// 4.1. Camera Indicator
+    if (has_cameras) total += change_focus->camera_set->size * 2;	// 4.2. Camera Set
+    if (has_cameras) total += change_focus->camera->size * 2;		// 4.2. Camera
 
     *buffer = malloc(total);
 
     offset = acc_write_int8_t(*buffer, offset, ACC_OUTBOUND_MESSAGE_CHANGE_FOCUS);
     offset = acc_write_int32_t(*buffer, offset, change_focus->connection_id);
-    if (change_focus->car_index != NULL) {
-        offset = acc_write_int8_t(*buffer, offset, 1);
+
+    offset = acc_write_int8_t(*buffer, offset, has_car_index ? 1 : 0);
+    if (has_car_index) {
         offset = acc_write_uint16_t(*buffer, offset, *change_focus->car_index);
-    } else {
-        offset = acc_write_int8_t(*buffer, offset, 0);
-    }
-    if (change_focus->camera_set != NULL || change_focus->camera != NULL) {
-        offset = acc_write_int8_t(*buffer, offset, 1);
-        if (change_focus->camera_set != 0) {
-            offset = acc_write_string(*buffer, offset, change_focus->camera_set);
-        }
-        if (change_focus->camera != 0) {
-            offset = acc_write_string(*buffer, offset, change_focus->camera);
-        }
     }
 
-    return offset != total ? total : -1;
+	offset = acc_write_int8_t(*buffer, offset, has_cameras ? 1 : 0);
+    if (has_cameras) {
+        offset = acc_write_string(*buffer, offset, change_focus->camera_set);
+        offset = acc_write_string(*buffer, offset, change_focus->camera);
+    }
+
+    return offset == total ? total : -1;
 }
 
 int32_t acc_write_instant_replay_request(char **buffer, const acc_req_instant_replay_t *req_instant_replay) {
     int32_t total = 0;
     int32_t offset = 0;
 
-    total += sizeof(int8_t);                                        // 1. Request Type
-    total += sizeof(int32_t);                                       // 2. Connection ID
-    total += sizeof(float);                                         // 3. Start Session Time
-    total += sizeof(float);                                         // 4. Duration
-    total += sizeof(int32_t);                                       // 5. Car Index Indicator
-    total += req_instant_replay->initial_camera_set->size * 2;    // 6. Initial Camera Set
-    total += req_instant_replay->initial_camera->size * 2;        // 7. Initial Camera
+    total += sizeof(int8_t);									// 1. Request Type
+    total += sizeof(int32_t);									// 2. Connection ID
+    total += sizeof(float);										// 3. Start Session Time
+    total += sizeof(float);										// 4. Duration
+    total += sizeof(int32_t);									// 5. Car Index Indicator
+    total += req_instant_replay->initial_camera_set->size * 2;	// 6. Initial Camera Set
+    total += req_instant_replay->initial_camera->size * 2;		// 7. Initial Camera
 
     *buffer = malloc(total);
 
@@ -197,17 +205,6 @@ int32_t acc_write_instant_replay_request(char **buffer, const acc_req_instant_re
     offset = acc_write_string(*buffer, offset, req_instant_replay->initial_camera);
 
     return offset != total ? total : -1;
-}
-
-int32_t acc_read_string(string_t *string, const char *buffer, int32_t offset) {
-    const uint16_t size = (uint16_t)buffer + offset;
-    offset += sizeof(uint16_t);
-
-    string->size = size;
-    string->data = malloc(size);
-    memcpy(string->data, buffer + offset, size);
-
-    return offset + size;
 }
 
 int32_t acc_read_bool(bool *data, const char *buffer, const int32_t offset) {
@@ -240,13 +237,25 @@ int32_t acc_read_float(float *data, const char *buffer, const int32_t offset) {
     return offset + (int32_t)sizeof(float);
 }
 
-int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
-    offset = acc_read_int32_t(&data->lap_time, buffer, offset); // 1. Lap Time
-    offset = acc_read_uint16_t(&data->car_index, buffer, offset); // 2. Car Index
-    offset = acc_read_uint16_t(&data->driver_index, buffer, offset); // 3. Driver Index
+int32_t acc_read_string(string_t *string, const char *buffer, int32_t offset) {
+    uint16_t size;
+    offset = acc_read_uint16_t(&size, buffer, offset);
 
+    string->size = size;
+    string->data = malloc(size);
+    memcpy(string->data, buffer + offset, size);
+
+    return offset + size;
+}
+
+int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
     int8_t splits_size = 0;
-    offset = acc_read_int8_t(&splits_size, buffer, offset); // 4. Splits Size
+
+    offset = acc_read_int32_t(&data->lap_time, buffer, offset);			// 1. Lap Time
+    offset = acc_read_uint16_t(&data->car_index, buffer, offset);		// 2. Car Index
+    offset = acc_read_uint16_t(&data->driver_index, buffer, offset);	// 3. Driver Index
+    offset = acc_read_int8_t(&splits_size, buffer, offset);				// 4. Splits Size
+
     data->splits = malloc(sizeof(int32_array_t));
     data->splits->size = (uint32_t)splits_size;
     data->splits->data = malloc(sizeof(int32_t) * splits_size);
@@ -255,14 +264,14 @@ int32_t acc_read_lap(acc_lap_info_t *data, const char *buffer, int32_t offset) {
         offset = acc_read_int32_t(&data->splits->data[index], buffer, offset); // 5. Split Time
     }
 
-    offset = acc_read_bool(&data->is_invalid, buffer, offset); // 6. Is Invalid Flag
-    offset = acc_read_bool(&data->is_valid_for_best, buffer, offset); // 7. Is Valid For Best Flag
+    offset = acc_read_bool(&data->is_invalid, buffer, offset);			// 6. Is Invalid Flag
+    offset = acc_read_bool(&data->is_valid_for_best, buffer, offset);	// 7. Is Valid For Best Flag
 
     bool is_outlap = false;
     bool is_inlap = false;
 
-    offset = acc_read_bool(&is_outlap, buffer, offset); // 8. Is Outlap Flag
-    offset = acc_read_bool(&is_inlap, buffer, offset); // 9. Is Inlap Flag
+    offset = acc_read_bool(&is_outlap, buffer, offset);	// 8. Is Outlap Flag
+    offset = acc_read_bool(&is_inlap, buffer, offset);	// 9. Is Inlap Flag
 
     if (is_outlap == true) {
         data->lap_type = ACC_LAP_TYPE_OUTLAP;
@@ -290,10 +299,10 @@ int32_t acc_read_registration_result(acc_reg_result_t *result, const char *buffe
 
     result->error_message = malloc(sizeof(string_t));
 
-    offset = acc_read_int32_t(&result->connection_id, buffer, offset); // 1. Connection ID
-    offset = acc_read_bool(&result->connection_success, buffer, offset); // 2. Connection Success
-    offset = acc_read_bool(&result->is_read_only, buffer, offset); // 3. Is Read-Only
-    offset = acc_read_string(result->error_message, buffer, offset); // 4. Error Message
+    offset = acc_read_int32_t(&result->connection_id, buffer, offset);		// 1. Connection ID
+    offset = acc_read_bool(&result->connection_success, buffer, offset);	// 2. Connection Success
+    offset = acc_read_bool(&result->is_read_only, buffer, offset);			// 3. Is Read-Only
+    offset = acc_read_string(result->error_message, buffer, offset);		// 4. Error Message
 
     return offset;
 }
@@ -305,16 +314,16 @@ int32_t acc_read_real_time_update(acc_rt_update_t *update, const char *buffer) {
     update->active_camera = malloc(sizeof(string_t));
     update->current_hud_page = malloc(sizeof(string_t));
 
-    offset = acc_read_uint16_t(&update->event_index, buffer, offset); // 1. Event Index
-    offset = acc_read_uint16_t(&update->session_index, buffer, offset); // 2. Session Index
-    offset = acc_read_int8_t(&update->session_type, buffer, offset); // 3. Session Type
-    offset = acc_read_int8_t(&update->phase, buffer, offset); // 4. Phase
-    offset = acc_read_float(&update->session_time, buffer, offset); // 5. Session Type
-    offset = acc_read_float(&update->session_end_time, buffer, offset); // 6. Session Type
-    offset = acc_read_int32_t(&update->focused_car_index, buffer, offset); // 7. Track Length
-    offset = acc_read_string(update->active_camera_set, buffer, offset); // 8. Track Temperature
-    offset = acc_read_string(update->active_camera, buffer, offset); // 9. Track Rain
-    offset = acc_read_string(update->current_hud_page, buffer, offset); // 10. Track Wind Direction
+    offset = acc_read_uint16_t(&update->event_index, buffer, offset);		// 1. Event Index
+    offset = acc_read_uint16_t(&update->session_index, buffer, offset);		// 2. Session Index
+    offset = acc_read_int8_t(&update->session_type, buffer, offset);		// 3. Session Type
+    offset = acc_read_int8_t(&update->phase, buffer, offset);				// 4. Phase
+    offset = acc_read_float(&update->session_time, buffer, offset);			// 5. Session Type
+    offset = acc_read_float(&update->session_end_time, buffer, offset);		// 6. Session Type
+    offset = acc_read_int32_t(&update->focused_car_index, buffer, offset);	// 7. Track Length
+    offset = acc_read_string(update->active_camera_set, buffer, offset);	// 8. Track Temperature
+    offset = acc_read_string(update->active_camera, buffer, offset);		// 9. Track Rain
+    offset = acc_read_string(update->current_hud_page, buffer, offset);		// 10. Track Wind Direction
 
     offset = acc_read_bool(&update->is_replay_playing, buffer, offset); // 11. Is Replay Playing Flag
     if (update->is_replay_playing == true) {
@@ -322,13 +331,13 @@ int32_t acc_read_real_time_update(acc_rt_update_t *update, const char *buffer) {
         offset = acc_read_float(&update->replay_remaining_time, buffer, offset); // 13. Replay Remaining Time
     }
 
-    offset = acc_read_float(&update->time_of_day, buffer, offset); // 14. Time of Day
-    offset = acc_read_int8_t(&update->ambient_temperature, buffer, offset); // 15. Ambient Temperature
-    offset = acc_read_int8_t(&update->track_temperature, buffer, offset); // 16. Track Temperature
-    offset = acc_read_int8_t(&update->cloud_level, buffer, offset); // 17. Cloud Level
-    offset = acc_read_int8_t(&update->rain_level, buffer, offset); // 18. Rain Level
-    offset = acc_read_int8_t(&update->wetness_level, buffer, offset); // 19. Wetness Level
-    offset = acc_read_lap(&update->best_session_lap, buffer, offset); // 20. Best Session Lap
+    offset = acc_read_float(&update->time_of_day, buffer, offset);			// 14. Time of Day
+    offset = acc_read_int8_t(&update->ambient_temperature, buffer, offset);	// 15. Ambient Temperature
+    offset = acc_read_int8_t(&update->track_temperature, buffer, offset);	// 16. Track Temperature
+    offset = acc_read_int8_t(&update->cloud_level, buffer, offset);			// 17. Cloud Level
+    offset = acc_read_int8_t(&update->rain_level, buffer, offset);			// 18. Rain Level
+    offset = acc_read_int8_t(&update->wetness_level, buffer, offset);		// 19. Wetness Level
+    offset = acc_read_lap(&update->best_session_lap, buffer, offset);		// 20. Best Session Lap
 
     return offset;
 }
@@ -336,23 +345,23 @@ int32_t acc_read_real_time_update(acc_rt_update_t *update, const char *buffer) {
 int32_t acc_read_real_time_car_update(acc_rt_car_update_t *update, const char *buffer) {
     int32_t offset = 1;
 
-    offset = acc_read_uint16_t(&update->car_index, buffer, offset); // 1. Car Index
-    offset = acc_read_uint16_t(&update->driver_index, buffer, offset); // 2. Driver Index
-    offset = acc_read_int8_t(&update->gear, buffer, offset); // 3. Gear
-    offset = acc_read_float(&update->world_position_x, buffer, offset); // 4. World Position X
-    offset = acc_read_float(&update->world_position_y, buffer, offset); // 5. World Position Y
-    offset = acc_read_float(&update->yaw, buffer, offset); // 6. Yaw
-    offset = acc_read_int8_t(&update->car_location, buffer, offset); // 7. Car Location
-    offset = acc_read_uint16_t(&update->speed, buffer, offset); // 8. Speed
-    offset = acc_read_uint16_t(&update->position, buffer, offset); // 9. Position
-    offset = acc_read_uint16_t(&update->cup_position, buffer, offset); // 10. Cup Position
-    offset = acc_read_uint16_t(&update->track_position, buffer, offset); // 11. Track Position
-    offset = acc_read_float(&update->spline_position, buffer, offset); // 12. Spline Position
-    offset = acc_read_uint16_t(&update->laps, buffer, offset); // 13. Laps
-    offset = acc_read_int32_t(&update->delta, buffer, offset); // 14. Delta
-    offset = acc_read_lap(&update->best_session_lap, buffer, offset); // 15. Best Session Lap
-    offset = acc_read_lap(&update->last_lap, buffer, offset); // 16. Last Lap
-    offset = acc_read_lap(&update->current_lap, buffer, offset); // 17. Current Lap
+    offset = acc_read_uint16_t(&update->car_index, buffer, offset);			// 1. Car Index
+    offset = acc_read_uint16_t(&update->driver_index, buffer, offset);		// 2. Driver Index
+    offset = acc_read_int8_t(&update->gear, buffer, offset);				// 3. Gear
+    offset = acc_read_float(&update->world_position_x, buffer, offset);		// 4. World Position X
+    offset = acc_read_float(&update->world_position_y, buffer, offset);		// 5. World Position Y
+    offset = acc_read_float(&update->yaw, buffer, offset);					// 6. Yaw
+    offset = acc_read_int8_t(&update->car_location, buffer, offset);		// 7. Car Location
+    offset = acc_read_uint16_t(&update->speed, buffer, offset);				// 8. Speed
+    offset = acc_read_uint16_t(&update->position, buffer, offset);			// 9. Position
+    offset = acc_read_uint16_t(&update->cup_position, buffer, offset);		// 10. Cup Position
+    offset = acc_read_uint16_t(&update->track_position, buffer, offset);	// 11. Track Position
+    offset = acc_read_float(&update->spline_position, buffer, offset);		// 12. Spline Position
+    offset = acc_read_uint16_t(&update->laps, buffer, offset);				// 13. Laps
+    offset = acc_read_int32_t(&update->delta, buffer, offset);				// 14. Delta
+    offset = acc_read_lap(&update->best_session_lap, buffer, offset);		// 15. Best Session Lap
+    offset = acc_read_lap(&update->last_lap, buffer, offset);				// 16. Last Lap
+    offset = acc_read_lap(&update->current_lap, buffer, offset);			// 17. Current Lap
 
     return offset;
 }
@@ -361,8 +370,8 @@ int32_t acc_read_entry_list(acc_entry_list_t *list, const char *buffer) {
     int32_t offset = 1;
     uint16_t size = 0;
 
-    offset = acc_read_int32_t(&list->connection_id, buffer, offset); // 1. Connection ID
-    offset = acc_read_uint16_t(&size, buffer, offset); // 2. Entries Size
+    offset = acc_read_int32_t(&list->connection_id, buffer, offset);	// 1. Connection ID
+    offset = acc_read_uint16_t(&size, buffer, offset);					// 2. Entries Size
 
     list->indexes = malloc(sizeof(uint16_array_t));
     list->indexes->size = (uint32_t)size;
@@ -379,25 +388,86 @@ int32_t acc_read_entry_list_car(acc_car_info_t *data, const char *buffer) {
     int32_t offset = 1;
     int8_t size = 0;
 
-    offset = acc_read_uint16_t(&data->car_index, buffer, offset); // 1. Connection ID
-    offset = acc_read_int8_t(&data->car_model_type, buffer, offset); // 2. Car Model Type
-    offset = acc_read_string(data->team_name, buffer, offset); // 3. Team Name
-    offset = acc_read_int32_t(&data->race_number, buffer, offset); // 4. Race Number
-    offset = acc_read_int8_t(&data->cup_category, buffer, offset); // 5. Cup Category
-    offset = acc_read_int8_t(&data->current_driver_index, buffer, offset); // 6. Current Driver Index
-    offset = acc_read_int8_t(&size, buffer, offset); // 7. Drivers Size
+    offset = acc_read_uint16_t(&data->car_index, buffer, offset);			// 1. Connection ID
+    offset = acc_read_int8_t(&data->car_model_type, buffer, offset);		// 2. Car Model Type
+    offset = acc_read_string(data->team_name, buffer, offset);				// 3. Team Name
+    offset = acc_read_int32_t(&data->race_number, buffer, offset);			// 4. Race Number
+    offset = acc_read_int8_t(&data->cup_category, buffer, offset);			// 5. Cup Category
+    offset = acc_read_int8_t(&data->current_driver_index, buffer, offset);	// 6. Current Driver Index
+    offset = acc_read_int8_t(&size, buffer, offset);						// 7. Drivers Size
 
     data->drivers_info = malloc(sizeof(acc_driver_info_array_t));
     data->drivers_info->size = (uint32_t)size;
     data->drivers_info->data = malloc(sizeof(acc_driver_info_t) * size);
 
     for (int i = 0; i < size; i++) {
-        offset = acc_read_string(data->drivers_info->data[i].first_name, buffer, offset); // 8. First Name
-        offset = acc_read_string(data->drivers_info->data[i].last_name, buffer, offset); // 9. Last Name
-        offset = acc_read_string(data->drivers_info->data[i].short_name, buffer, offset); // 10. Short Name
-        offset = acc_read_int8_t(&data->drivers_info->data[i].category, buffer, offset); // 11. Category
-        offset = acc_read_uint16_t(&data->drivers_info->data[i].nationality, buffer, offset); // 12. Nationality
+        offset = acc_read_string(data->drivers_info->data[i].first_name, buffer, offset);		// 8. First Name
+        offset = acc_read_string(data->drivers_info->data[i].last_name, buffer, offset);		// 9. Last Name
+        offset = acc_read_string(data->drivers_info->data[i].short_name, buffer, offset);		// 10. Short Name
+        offset = acc_read_int8_t(&data->drivers_info->data[i].category, buffer, offset);		// 11. Category
+        offset = acc_read_uint16_t(&data->drivers_info->data[i].nationality, buffer, offset);	// 12. Nationality
     }
+
+    return offset;
+}
+
+// TODO :: hashmap approach
+int32_t acc_read_track_data(acc_track_data_t *data, const char *buffer) {
+    int32_t offset = 1;
+    int8_t camera_set_size = 0;
+    int8_t hud_page_size = 0;
+
+    data->track_name = malloc(sizeof(string_t));
+    data->camera_sets = malloc(sizeof(string_array_t));
+    data->cameras = malloc(sizeof(string_array_t));
+    data->hud_pages = malloc(sizeof(string_array_t));
+
+    offset = acc_read_int32_t(&data->connection_id, buffer, offset);	// 1. Connection ID
+    offset = acc_read_string(data->track_name, buffer, offset);			// 2. Track Name
+    offset = acc_read_int32_t(&data->track_id, buffer, offset);			// 3. Track ID
+    offset = acc_read_int32_t(&data->track_length, buffer, offset);		// 4. Track Length
+    offset = acc_read_int8_t(&camera_set_size, buffer, offset);			// 5. Camera Set Size
+
+    data->camera_sets->size = camera_set_size;
+    data->camera_sets->data = malloc(sizeof(string_t) * camera_set_size);
+
+
+    for (int camera_set_index = 0; camera_set_index < camera_set_size; camera_set_index++) {
+        int8_t camera_size = 0;
+        int32_t previous_camera_size = data->cameras->size;
+
+        offset = acc_read_string(data->camera_sets->data[camera_set_index], buffer, offset); 	// 6. Camera Set Item
+        offset = acc_read_int8_t(&camera_size, buffer, offset);									// 7. Camera Size
+
+        data->cameras->size += camera_size;
+        data->cameras->data = realloc(data->cameras->data, sizeof(string_t) * data->cameras->size);
+
+        for (int camera_index = 0; camera_index < camera_size; camera_index++) {
+            offset = acc_read_string(data->cameras->data[previous_camera_size + camera_index], buffer, offset); // 8. Camera Item
+        }
+    }
+
+    offset = acc_read_int8_t(&hud_page_size, buffer, offset); // 9. HUD Page Size
+
+    data->hud_pages->size = hud_page_size;
+    data->hud_pages->data = malloc(sizeof(string_t) * hud_page_size);
+
+    for (int index = 0; index < camera_set_size; index++) {
+        offset = acc_read_string(data->hud_pages->data[index], buffer, offset); // 10. HUD Page Item
+    }
+
+    return offset;
+}
+
+int32_t acc_read_broadcasting_event(acc_broadcasting_event_t *data, const char *buffer) {
+    int32_t offset = 1;
+
+    data->message = malloc(sizeof(string_t));
+
+    offset = acc_read_int8_t(&data->type, buffer, offset);			// 1. Type
+    offset = acc_read_string(data->message, buffer, offset);		// 2. Message
+    offset = acc_read_int32_t(&data->time, buffer, offset);			// 3. Time
+    offset = acc_read_int32_t(&data->car_index, buffer, offset);	// 4. Car Index
 
     return offset;
 }
@@ -526,14 +596,17 @@ acc_status_t acc_client_receive(acc_client_t *client, acc_server_response_t *res
         case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
             response->type = ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR;
             response->data.entry_list_car = malloc(sizeof(acc_car_info_t));
+            offset = acc_read_entry_list_car(response->data.entry_list_car, buffer);
             break;
         case ACC_INBOUND_MESSAGE_TRACK_DATA:
             response->type = ACC_INBOUND_MESSAGE_TRACK_DATA;
             response->data.track_data = malloc(sizeof(acc_track_data_t));
+            offset = acc_read_track_data(response->data.track_data, buffer);
             break;
         case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
             response->type = ACC_INBOUND_MESSAGE_BROADCASTING_EVENT;
             response->data.broadcasting_event = malloc(sizeof(acc_broadcasting_event_t));
+            offset = acc_read_broadcasting_event(response->data.broadcasting_event, buffer);
             break;
         default:
             fprintf(stderr, "ACC: Invalid Inbound Message Type: %d\n", response_type);
