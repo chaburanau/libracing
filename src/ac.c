@@ -1,7 +1,8 @@
+#include "../include/libracing/ac.h"
+
 #include <stdlib.h>
 
-#include "../include/libracing/udp_socket.h"
-#include "../include/libracing/ac.h"
+#include "./udp_socket.c"
 
 #define AC_BUFFER_SIZE 408
 

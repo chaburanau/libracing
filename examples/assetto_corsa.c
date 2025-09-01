@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../include/libracing/ac.h"
+#include "../src/ac.c"
 
 void receive_data(ac_client_t *client) {
     ac_event_t event;
