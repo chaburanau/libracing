@@ -5,7 +5,6 @@
 
 #include "ac.h"
 #include "types.h"
-#include "udp_socket.h"
 
 #define ACC_BROADCASTING_PROTOCOL_VERSION 4
 
@@ -319,8 +318,7 @@ typedef struct {
     string_t *command_password;
 } acc_reg_app_t;
 
-typedef struct {
-} acc_unreg_app_t;
+typedef struct {} acc_unreg_app_t;
 
 typedef struct {
     int32_t connection_id;
