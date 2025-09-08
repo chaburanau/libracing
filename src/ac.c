@@ -57,6 +57,19 @@ bool ac_client_destroy(ac_client_t *client) {
   return false;
 }
 
+void ac_fix_string(char *string, int32_t size) {
+  bool found = false;
+
+  for (int i = 0; i < size; i++) {
+    if (string[i] == '%') {
+      found = true;
+    }
+    if (found == true) {
+      string[i] = '\0';
+    }
+  }
+}
+
 bool ac_client_send(ac_client_t *client, ac_operation_t operation) {
   if (client == NULL) {
     ac_last_error = AC_STATUS_CLIENT_NOT_INITIALIZED;
@@ -91,6 +104,7 @@ bool ac_client_send(ac_client_t *client, ac_operation_t operation) {
 
 bool ac_set_response_handshake(ac_event_t *event, char *buffer) {
   event->type = AC_EVENT_TYPE_HANDSHAKE;
+
   event->data.handshake = malloc(sizeof(ac_response_t));
   if (event->data.handshake == NULL) {
     ac_last_error = AC_STATUS_ALLOCATION_FAILED;
@@ -98,11 +112,18 @@ bool ac_set_response_handshake(ac_event_t *event, char *buffer) {
   }
 
   memcpy(event->data.handshake, buffer, sizeof(ac_response_t));
+
+  ac_fix_string(event->data.handshake->car_name, 100);
+  ac_fix_string(event->data.handshake->driver_name, 100);
+  ac_fix_string(event->data.handshake->track_name, 100);
+  ac_fix_string(event->data.handshake->track_config, 100);
+
   return false;
 }
 
 bool ac_set_response_rt_car_info(ac_event_t *event, char *buffer) {
   event->type = AC_EVENT_TYPE_CAR_INFO;
+
   event->data.car_info = malloc(sizeof(ac_rt_car_info));
   if (event->data.car_info == NULL) {
     ac_last_error = AC_STATUS_ALLOCATION_FAILED;
@@ -110,11 +131,13 @@ bool ac_set_response_rt_car_info(ac_event_t *event, char *buffer) {
   }
 
   memcpy(event->data.car_info, buffer, sizeof(ac_rt_car_info));
+
   return false;
 }
 
 bool ac_set_response_rt_lap_info(ac_event_t *event, char *buffer) {
   event->type = AC_EVENT_TYPE_LAP_INFO;
+
   event->data.lap_info = malloc(sizeof(ac_rt_lap_info));
   if (event->data.lap_info == NULL) {
     ac_last_error = AC_STATUS_ALLOCATION_FAILED;
@@ -122,6 +145,10 @@ bool ac_set_response_rt_lap_info(ac_event_t *event, char *buffer) {
   }
 
   memcpy(event->data.lap_info, buffer, sizeof(ac_rt_lap_info));
+
+  ac_fix_string(event->data.lap_info->car_name, 100);
+  ac_fix_string(event->data.lap_info->driver_name, 100);
+
   return false;
 }
 
