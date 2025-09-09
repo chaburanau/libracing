@@ -21,4 +21,3 @@ typedef struct {
     uint32_t size;
     string_t **data;
 } string_array_t;
-
