@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <winerror.h>
@@ -20,8 +21,8 @@ typedef struct {
 
 udp_socket_t *udp_socket_create(const char *address, uint16_t port);
 bool udp_socket_destroy(udp_socket_t *udp_socket);
-int32_t udp_socket_send(udp_socket_t *udp_socket, char *data, int32_t size);
-int32_t udp_socket_receive(udp_socket_t *udp_socket, char *data, int32_t size);
+int32_t udp_socket_send(udp_socket_t *udp_socket, char *data, size_t size);
+int32_t udp_socket_receive(udp_socket_t *udp_socket, char *data, size_t size);
 int32_t udp_socket_get_last_error(void);
 
 udp_socket_t *udp_socket_create(const char *address, uint16_t port) {
@@ -92,13 +93,13 @@ struct sockaddr* _address(udp_socket_t* udp_socket) {
   return (struct sockaddr *)&udp_socket->_address;
 }
 
-int32_t udp_socket_send(udp_socket_t *udp_socket, char *data, int32_t size) {
+int32_t udp_socket_send(udp_socket_t *udp_socket, char *data, size_t size) {
   if (udp_socket == NULL) {
     udp_socket_last_error = -1000;
     return -1000;
   }
 
-  const int32_t bytes_sent = sendto(udp_socket->_socket, data, size, 0, _address(udp_socket), udp_socket_address_size);
+  const int32_t bytes_sent = sendto(udp_socket->_socket, data, (int32_t)size, 0, _address(udp_socket), udp_socket_address_size);
   if (bytes_sent == SOCKET_ERROR) {
     udp_socket_last_error = WSAGetLastError();
     return -1;
@@ -107,13 +108,13 @@ int32_t udp_socket_send(udp_socket_t *udp_socket, char *data, int32_t size) {
   return bytes_sent;
 }
 
-int32_t udp_socket_receive(udp_socket_t *udp_socket, char *data, int32_t size) {
+int32_t udp_socket_receive(udp_socket_t *udp_socket, char *data, size_t size) {
   if (udp_socket == NULL) {
     udp_socket_last_error = -1;
     return -1;
   }
 
-  const int32_t bytes_received = recvfrom(udp_socket->_socket, data, size, 0, _address(udp_socket), &udp_socket_address_size);
+  const int32_t bytes_received = recvfrom(udp_socket->_socket, data, (int32_t)size, 0, _address(udp_socket), &udp_socket_address_size);
   if (bytes_received == SOCKET_ERROR) {
     udp_socket_last_error = WSAGetLastError();
     return -1;
