@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +10,7 @@
 
 void acc_write_type(char *buffer, size_t *offset, void *data, size_t size) {
     memcpy(buffer + *offset, data, size);
+    (*offset) += size;
 }
 
 void acc_write_int8_t(char *buffer, size_t *offset, int8_t data) {
@@ -27,9 +29,8 @@ void acc_write_float(char *buffer, size_t *offset, float data) {
     acc_write_type(buffer, offset, &data, sizeof(float));
 }
 
-// TODO : check string encoding
 void acc_write_string(char *buffer, size_t *offset, string_t *string) {
-    if (string == NULL) {
+    if (string == NULL || string->size == 0) {
         acc_write_uint16_t(buffer, offset, 0);
     } else {
         acc_write_uint16_t(buffer, offset, (uint16_t)string->size);
@@ -40,10 +41,10 @@ void acc_write_string(char *buffer, size_t *offset, string_t *string) {
 int32_t acc_write_register_application(char **buffer, size_t *total, acc_reg_app_t *reg_app) {
     (*total) += sizeof(int8_t);                         // 1. Request Type
     (*total) += sizeof(int8_t);                         // 2. Broadcasting Version
-    (*total) += reg_app->display_name->size * 2;        // 3. Display Name
-    (*total) += reg_app->connection_password->size * 2; // 4. Connection Password
+    (*total) += reg_app->display_name->size + 2;        // 3. Display Name
+    (*total) += reg_app->connection_password->size + 2; // 4. Connection Password
     (*total) += sizeof(int32_t);                        // 5. Update Interval
-    (*total) += reg_app->command_password->size * 2;    // 6. Command Password
+    (*total) += reg_app->command_password->size + 2;    // 6. Command Password
 
     *buffer = malloc(*total);
     if (*buffer == NULL) {
@@ -128,7 +129,7 @@ int32_t acc_write_request_track_data(char **buffer, size_t *total, acc_req_track
 int32_t acc_write_change_hud_page(char **buffer, size_t *total, acc_change_hud_page_t *change_hud_page) {
     (*total) += sizeof(int8_t);                      // 1. Request Type
     (*total) += sizeof(int32_t);                     // 2. Connection ID
-    (*total) += change_hud_page->hud_page->size * 2; // 3. HUD Page
+    (*total) += change_hud_page->hud_page->size + 2; // 3. HUD Page
 
     *buffer = malloc(*total);
     if (*buffer == NULL) {
@@ -160,10 +161,10 @@ int32_t acc_write_change_focus(char **buffer, size_t *total, acc_change_focus_t 
 
     (*total) += sizeof(int8_t); // 4.1. Camera Indicator
     if (has_cameras) {
-        (*total) += change_focus->camera_set->size * 2; // 4.2. Camera Set
+        (*total) += change_focus->camera_set->size + 2; // 4.2. Camera Set
     }
     if (has_cameras) {
-        (*total) += change_focus->camera->size * 2; // 4.3. Camera
+        (*total) += change_focus->camera->size + 2; // 4.3. Camera
     }
 
     *buffer = malloc(*total);
@@ -199,8 +200,8 @@ int32_t acc_write_instant_replay_request(char **buffer, size_t *total, acc_req_i
     (*total) += sizeof(float);                                    // 3. Start Session Time
     (*total) += sizeof(float);                                    // 4. Duration
     (*total) += sizeof(int32_t);                                  // 5. Car Index Indicator
-    (*total) += req_instant_replay->initial_camera_set->size * 2; // 6. Initial Camera Set
-    (*total) += req_instant_replay->initial_camera->size * 2;     // 7. Initial Camera
+    (*total) += req_instant_replay->initial_camera_set->size + 2; // 6. Initial Camera Set
+    (*total) += req_instant_replay->initial_camera->size + 2;     // 7. Initial Camera
 
     *buffer = malloc(*total);
     if (*buffer == NULL) {

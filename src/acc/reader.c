@@ -12,29 +12,29 @@ size_t acc_read_bool(bool *data, char *buffer, size_t offset) {
     return offset + sizeof(bool);
 }
 
-size_t acc_read_int8_t(int8_t *data, char *buffer, size_t offset) {
-    memcpy(data, buffer + offset, sizeof(int8_t));
-    return offset + sizeof(int8_t);
-}
-
 size_t acc_read_int16_t(int16_t *data, char *buffer, size_t offset) {
     memcpy(data, buffer + offset, sizeof(int16_t));
-    return offset + (int32_t)sizeof(int16_t);
+    return offset + sizeof(int16_t);
 }
 
 size_t acc_read_int32_t(int32_t *data, char *buffer, size_t offset) {
     memcpy(data, buffer + offset, sizeof(int32_t));
-    return offset + (int32_t)sizeof(int32_t);
+    return offset + sizeof(int32_t);
+}
+
+size_t acc_read_uint8_t(uint8_t *data, char *buffer, size_t offset) {
+    memcpy(data, buffer + offset, sizeof(uint8_t));
+    return offset + sizeof(uint8_t);
 }
 
 size_t acc_read_uint16_t(uint16_t *data, char *buffer, size_t offset) {
     memcpy(data, buffer + offset, sizeof(uint16_t));
-    return offset + (int32_t)sizeof(uint16_t);
+    return offset + sizeof(uint16_t);
 }
 
 size_t acc_read_float(float *data, char *buffer, size_t offset) {
     memcpy(data, buffer + offset, sizeof(float));
-    return offset + (int32_t)sizeof(float);
+    return offset + sizeof(float);
 }
 
 size_t acc_read_string(string_t *string, char *buffer, size_t offset) {
@@ -49,12 +49,12 @@ size_t acc_read_string(string_t *string, char *buffer, size_t offset) {
 }
 
 size_t acc_read_lap(acc_lap_info_t *data, char *buffer, size_t offset) {
-    int8_t splits_size = 0;
+    uint8_t splits_size = 0;
 
     offset = acc_read_int32_t(&data->lap_time, buffer, offset);      // 1. Lap Time
     offset = acc_read_uint16_t(&data->car_index, buffer, offset);    // 2. Car Index
     offset = acc_read_uint16_t(&data->driver_index, buffer, offset); // 3. Driver Index
-    offset = acc_read_int8_t(&splits_size, buffer, offset);          // 4. Splits Size
+    offset = acc_read_uint8_t(&splits_size, buffer, offset);         // 4. Splits Size
 
     data->splits = malloc(sizeof(int32_array_t));
     data->splits->size = (uint32_t)splits_size;
@@ -116,8 +116,8 @@ size_t acc_read_real_time_update(acc_rt_update_t *update, char *buffer) {
 
     offset = acc_read_uint16_t(&update->event_index, buffer, offset);      // 1. Event Index
     offset = acc_read_uint16_t(&update->session_index, buffer, offset);    // 2. Session Index
-    offset = acc_read_int8_t(&update->session_type, buffer, offset);       // 3. Session Type
-    offset = acc_read_int8_t(&update->phase, buffer, offset);              // 4. Phase
+    offset = acc_read_uint8_t(&update->session_type, buffer, offset);      // 3. Session Type
+    offset = acc_read_uint8_t(&update->phase, buffer, offset);             // 4. Phase
     offset = acc_read_float(&update->session_time, buffer, offset);        // 5. Session Type
     offset = acc_read_float(&update->session_end_time, buffer, offset);    // 6. Session Type
     offset = acc_read_int32_t(&update->focused_car_index, buffer, offset); // 7. Track Length
@@ -130,13 +130,13 @@ size_t acc_read_real_time_update(acc_rt_update_t *update, char *buffer) {
         offset = acc_read_float(&update->replay_remaining_time, buffer, offset); // 13. Replay Remaining Time
     }
 
-    offset = acc_read_float(&update->time_of_day, buffer, offset);          // 14. Time of Day
-    offset = acc_read_int8_t(&update->ambient_temperature, buffer, offset); // 15. Ambient Temperature
-    offset = acc_read_int8_t(&update->track_temperature, buffer, offset);   // 16. Track Temperature
-    offset = acc_read_int8_t(&update->cloud_level, buffer, offset);         // 17. Cloud Level
-    offset = acc_read_int8_t(&update->rain_level, buffer, offset);          // 18. Rain Level
-    offset = acc_read_int8_t(&update->wetness_level, buffer, offset);       // 19. Wetness Level
-    offset = acc_read_lap(&update->best_session_lap, buffer, offset);       // 20. Best Session Lap
+    offset = acc_read_float(&update->time_of_day, buffer, offset);           // 14. Time of Day
+    offset = acc_read_uint8_t(&update->ambient_temperature, buffer, offset); // 15. Ambient Temperature
+    offset = acc_read_uint8_t(&update->track_temperature, buffer, offset);   // 16. Track Temperature
+    offset = acc_read_uint8_t(&update->cloud_level, buffer, offset);         // 17. Cloud Level
+    offset = acc_read_uint8_t(&update->rain_level, buffer, offset);          // 18. Rain Level
+    offset = acc_read_uint8_t(&update->wetness_level, buffer, offset);       // 19. Wetness Level
+    offset = acc_read_lap(&update->best_session_lap, buffer, offset);        // 20. Best Session Lap
 
     return offset;
 }
@@ -146,11 +146,11 @@ size_t acc_read_real_time_car_update(acc_rt_car_update_t *update, char *buffer) 
 
     offset = acc_read_uint16_t(&update->car_index, buffer, offset);      // 1. Car Index
     offset = acc_read_uint16_t(&update->driver_index, buffer, offset);   // 2. Driver Index
-    offset = acc_read_int8_t(&update->gear, buffer, offset);             // 3. Gear
+    offset = acc_read_uint8_t(&update->gear, buffer, offset);            // 3. Gear
     offset = acc_read_float(&update->world_position_x, buffer, offset);  // 4. World Position X
     offset = acc_read_float(&update->world_position_y, buffer, offset);  // 5. World Position Y
     offset = acc_read_float(&update->yaw, buffer, offset);               // 6. Yaw
-    offset = acc_read_int8_t(&update->car_location, buffer, offset);     // 7. Car Location
+    offset = acc_read_uint8_t(&update->car_location, buffer, offset);    // 7. Car Location
     offset = acc_read_uint16_t(&update->speed, buffer, offset);          // 8. Speed
     offset = acc_read_uint16_t(&update->position, buffer, offset);       // 9. Position
     offset = acc_read_uint16_t(&update->cup_position, buffer, offset);   // 10. Cup Position
@@ -185,15 +185,15 @@ size_t acc_read_entry_list(acc_entry_list_t *list, char *buffer) {
 
 size_t acc_read_entry_list_car(acc_car_info_t *data, char *buffer) {
     size_t offset = 1;
-    int8_t size = 0;
+    uint8_t size = 0;
 
-    offset = acc_read_uint16_t(&data->car_index, buffer, offset);          // 1. Connection ID
-    offset = acc_read_int8_t(&data->car_model_type, buffer, offset);       // 2. Car Model Type
-    offset = acc_read_string(data->team_name, buffer, offset);             // 3. Team Name
-    offset = acc_read_int32_t(&data->race_number, buffer, offset);         // 4. Race Number
-    offset = acc_read_int8_t(&data->cup_category, buffer, offset);         // 5. Cup Category
-    offset = acc_read_int8_t(&data->current_driver_index, buffer, offset); // 6. Current Driver Index
-    offset = acc_read_int8_t(&size, buffer, offset);                       // 7. Drivers Size
+    offset = acc_read_uint16_t(&data->car_index, buffer, offset);           // 1. Connection ID
+    offset = acc_read_uint8_t(&data->car_model_type, buffer, offset);       // 2. Car Model Type
+    offset = acc_read_string(data->team_name, buffer, offset);              // 3. Team Name
+    offset = acc_read_int32_t(&data->race_number, buffer, offset);          // 4. Race Number
+    offset = acc_read_uint8_t(&data->cup_category, buffer, offset);         // 5. Cup Category
+    offset = acc_read_uint8_t(&data->current_driver_index, buffer, offset); // 6. Current Driver Index
+    offset = acc_read_uint8_t(&size, buffer, offset);                       // 7. Drivers Size
 
     data->drivers_info = malloc(sizeof(acc_driver_info_array_t));
     data->drivers_info->size = (uint32_t)size;
@@ -203,7 +203,7 @@ size_t acc_read_entry_list_car(acc_car_info_t *data, char *buffer) {
         offset = acc_read_string(data->drivers_info->data[i].first_name, buffer, offset);     // 8. First Name
         offset = acc_read_string(data->drivers_info->data[i].last_name, buffer, offset);      // 9. Last Name
         offset = acc_read_string(data->drivers_info->data[i].short_name, buffer, offset);     // 10. Short Name
-        offset = acc_read_int8_t(&data->drivers_info->data[i].category, buffer, offset);      // 11. Category
+        offset = acc_read_uint8_t(&data->drivers_info->data[i].category, buffer, offset);     // 11. Category
         offset = acc_read_uint16_t(&data->drivers_info->data[i].nationality, buffer, offset); // 12. Nationality
     }
 
@@ -213,8 +213,8 @@ size_t acc_read_entry_list_car(acc_car_info_t *data, char *buffer) {
 // TODO :: hashmap approach
 size_t acc_read_track_data(acc_track_data_t *data, char *buffer) {
     size_t offset = 1;
-    int8_t camera_set_size = 0;
-    int8_t hud_page_size = 0;
+    uint8_t camera_set_size = 0;
+    uint8_t hud_page_size = 0;
 
     data->track_name = malloc(sizeof(string_t));
     data->camera_sets = malloc(sizeof(string_array_t));
@@ -225,17 +225,17 @@ size_t acc_read_track_data(acc_track_data_t *data, char *buffer) {
     offset = acc_read_string(data->track_name, buffer, offset);      // 2. Track Name
     offset = acc_read_int32_t(&data->track_id, buffer, offset);      // 3. Track ID
     offset = acc_read_int32_t(&data->track_length, buffer, offset);  // 4. Track Length
-    offset = acc_read_int8_t(&camera_set_size, buffer, offset);      // 5. Camera Set Size
+    offset = acc_read_uint8_t(&camera_set_size, buffer, offset);     // 5. Camera Set Size
 
     data->camera_sets->size = (uint32_t)camera_set_size;
     data->camera_sets->data = malloc(sizeof(string_t) * (size_t)camera_set_size);
 
     for (uint8_t camera_set_index = 0; camera_set_index < camera_set_size; camera_set_index++) {
-        int8_t camera_size = 0;
+        uint8_t camera_size = 0;
         uint32_t previous_camera_size = data->cameras->size;
 
         offset = acc_read_string(data->camera_sets->data[camera_set_index], buffer, offset); // 6. Camera Set Item
-        offset = acc_read_int8_t(&camera_size, buffer, offset);                              // 7. Camera Size
+        offset = acc_read_uint8_t(&camera_size, buffer, offset);                             // 7. Camera Size
 
         data->cameras->size += (uint32_t)camera_size;
         data->cameras->data = realloc(data->cameras->data, sizeof(string_t) * data->cameras->size);
@@ -245,7 +245,7 @@ size_t acc_read_track_data(acc_track_data_t *data, char *buffer) {
         }
     }
 
-    offset = acc_read_int8_t(&hud_page_size, buffer, offset); // 9. HUD Page Size
+    offset = acc_read_uint8_t(&hud_page_size, buffer, offset); // 9. HUD Page Size
 
     data->hud_pages->size = (uint32_t)hud_page_size;
     data->hud_pages->data = malloc(sizeof(string_t) * (size_t)hud_page_size);
@@ -262,7 +262,7 @@ size_t acc_read_broadcasting_event(acc_broadcasting_event_t *data, char *buffer)
 
     data->message = malloc(sizeof(string_t));
 
-    offset = acc_read_int8_t(&data->type, buffer, offset);       // 1. Type
+    offset = acc_read_uint8_t(&data->type, buffer, offset);      // 1. Type
     offset = acc_read_string(data->message, buffer, offset);     // 2. Message
     offset = acc_read_int32_t(&data->time, buffer, offset);      // 3. Time
     offset = acc_read_int32_t(&data->car_index, buffer, offset); // 4. Car Index

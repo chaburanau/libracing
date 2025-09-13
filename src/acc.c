@@ -99,14 +99,9 @@ bool acc_client_send(acc_client_t *client, acc_server_request_t *request) {
         return true;
     }
 
-    if (total <= 0) {
-        acc_last_error = ACC_STATUS_BUFFER_SIZE_MISMATCH;
-        return true;
-    }
-
     int32_t sent = udp_socket_send(client->socket, buffer, total);
     if (sent < 0) {
-        acc_last_error = ACC_STATUS_SOCKET_ERROR;
+        acc_last_error = udp_socket_get_last_error();
         return true;
     }
 
@@ -137,59 +132,94 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
 
     int32_t received = udp_socket_receive(client->socket, buffer, size);
     if (received < 0) {
+        acc_last_error = udp_socket_get_last_error();
         free(buffer);
-        acc_last_error = ACC_STATUS_SOCKET_ERROR;
         return true;
     }
 
-    int8_t response_type = buffer[0];
     size_t offset;
+    response->type = buffer[0];
 
-    switch (response_type) {
+    switch (response->type) {
     case ACC_INBOUND_MESSAGE_REGISTRATION_RESULT:
-        response->type = ACC_INBOUND_MESSAGE_REGISTRATION_RESULT;
         response->data.registration_result = malloc(sizeof(acc_reg_result_t));
+        if (response->data.registration_result == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_registration_result(response->data.registration_result, buffer);
         break;
     case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
-        response->type = ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE;
         response->data.real_time_update = malloc(sizeof(acc_rt_update_t));
+        if (response->data.real_time_update == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_real_time_update(response->data.real_time_update, buffer);
         break;
     case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
-        response->type = ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE;
         response->data.real_time_car_update = malloc(sizeof(acc_rt_car_update_t));
+        if (response->data.real_time_car_update == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_real_time_car_update(response->data.real_time_car_update, buffer);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST:
-        response->type = ACC_INBOUND_MESSAGE_ENTRY_LIST;
         response->data.entry_list = malloc(sizeof(acc_entry_list_t));
+        if (response->data.entry_list == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_entry_list(response->data.entry_list, buffer);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
-        response->type = ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR;
         response->data.entry_list_car = malloc(sizeof(acc_car_info_t));
+        if (response->data.entry_list_car == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_entry_list_car(response->data.entry_list_car, buffer);
         break;
     case ACC_INBOUND_MESSAGE_TRACK_DATA:
-        response->type = ACC_INBOUND_MESSAGE_TRACK_DATA;
         response->data.track_data = malloc(sizeof(acc_track_data_t));
+        if (response->data.track_data == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_track_data(response->data.track_data, buffer);
         break;
     case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
-        response->type = ACC_INBOUND_MESSAGE_BROADCASTING_EVENT;
         response->data.broadcasting_event = malloc(sizeof(acc_broadcasting_event_t));
+        if (response->data.broadcasting_event == NULL) {
+            acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
+            free(buffer);
+            return true;
+        }
+
         offset = acc_read_broadcasting_event(response->data.broadcasting_event, buffer);
         break;
     default:
-        free(buffer);
         acc_last_error = ACC_STATUS_INVALID_INBOUND_MESSAGE_TYPE;
+        free(buffer);
         return true;
     }
 
     if (offset > size) {
-        free(buffer);
         acc_last_error = ACC_STATUS_INBOUND_BUFFER_TOO_SMALL;
+        free(buffer);
         return true;
     }
 

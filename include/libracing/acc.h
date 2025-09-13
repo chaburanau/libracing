@@ -203,7 +203,7 @@ typedef struct {
     string_t *first_name; // Driver's First Name
     string_t *last_name;  // Driver's Last Name
     string_t *short_name; // Short Driver Name
-    int8_t category;      // DriverCategory Enum
+    uint8_t category;     // DriverCategory Enum
     uint16_t nationality; // Nationality Enum
 } acc_driver_info_t;
 
@@ -214,12 +214,12 @@ typedef struct {
 
 typedef struct {
     uint16_t car_index;                    // Index from a Cars array
-    int8_t car_model_type;                 // Model type of the car
-    int8_t cup_category;                   // Cup category
+    uint8_t car_model_type;                // Model type of the car
+    uint8_t cup_category;                  // Cup category
     string_t *team_name;                   // Team name of the car
     int32_t nationality;                   // Nationality Enum
     int32_t race_number;                   // Car number
-    int8_t current_driver_index;           // Index from a Drivers array
+    uint8_t current_driver_index;          // Index from a Drivers array
     acc_driver_info_array_t *drivers_info; // A Drivers array
 } acc_car_info_t;
 
@@ -244,7 +244,7 @@ typedef struct {
 } acc_track_data_t;
 
 typedef struct {
-    int8_t type;       // Broadcasting Event Type
+    uint8_t type;      // Broadcasting Event Type
     string_t *message; // Broadcasting Event Message
     int32_t time;      // Broadcasting Event Time (in ms)
     int32_t car_index; // Index from a Cars array
@@ -253,11 +253,11 @@ typedef struct {
 typedef struct {
     uint16_t car_index;              // Index from a Cars array
     uint16_t driver_index;           // Index from a Drivers array
-    int8_t gear;                     // Gear the car is currently in
+    uint8_t gear;                    // Gear the car is currently in
     float world_position_x;          // X Position on the track
     float world_position_y;          // Y Position on the track
     float yaw;                       // Yaw of the car
-    int8_t car_location;             // CarLocation Enum
+    uint8_t car_location;            // CarLocation Enum
     uint16_t speed;                  // Car's speed (in km/h)
     uint16_t position;               // Car's position
     uint16_t track_position;         // Car's track position
@@ -268,19 +268,19 @@ typedef struct {
     acc_lap_info_t current_lap;      // Current lap info
     uint16_t laps;                   // Laps
     uint16_t cup_position;           // Cup position
-    int8_t driver_count;             // Number of drivers from this car
+    uint8_t driver_count;            // Number of drivers from this car
 } acc_rt_car_update_t;
 
 typedef struct {
     uint16_t event_index;            // Index from a Events array
     uint16_t session_index;          // Index from a Session array
-    int8_t phase;                    // SessionPhase enum
+    uint8_t phase;                   // SessionPhase enum
     float session_time;              // Session Time (timespan)
     float remaining_time;            // Remaining Time (timespan)
     float time_of_day;               // Time of the day (timespan)
-    int8_t rain_level;               // Rain level
-    int8_t cloud_level;              // Cloud level
-    int8_t wetness_level;            // Wetness level
+    uint8_t rain_level;              // Rain level
+    uint8_t cloud_level;             // Cloud level
+    uint8_t wetness_level;           // Wetness level
     acc_lap_info_t best_session_lap; // Best Session Lap
     uint16_t best_lap_car_index;     // Index from a Cars array
     uint16_t best_lap_driver_index;  // Index from a Drivers array
@@ -292,9 +292,9 @@ typedef struct {
     float replay_remaining_time;     // Replay remaining time
     float session_remaining_time;    // Session remaining time (timespan)
     float session_end_time;          // Session end time (timespan)
-    int8_t session_type;             // SessionType enum
-    int8_t ambient_temperature;      // Ambient temperature
-    int8_t track_temperature;        // Track temperature
+    uint8_t session_type;            // SessionType enum
+    uint8_t ambient_temperature;     // Ambient temperature
+    uint8_t track_temperature;       // Track temperature
     string_t *current_hud_page;      // Name of the current HUD page
 } acc_rt_update_t;
 
