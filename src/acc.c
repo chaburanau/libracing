@@ -14,19 +14,20 @@ static int32_t acc_last_error = 0;
 int32_t acc_get_last_error(void) { return acc_last_error; }
 
 typedef struct ACClient {
-    int32_t connection_id;
     udp_socket_t *socket;
 } acc_client_t;
 
 acc_client_t *acc_client_create(char *address, uint16_t port) {
     acc_client_t *client = malloc(sizeof(acc_client_t));
     if (client == NULL) {
+        acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
         acc_client_destroy(client);
         return NULL;
     }
 
     client->socket = udp_socket_create(address, port);
     if (client->socket == NULL) {
+        acc_last_error = udp_socket_get_last_error();
         acc_client_destroy(client);
         return NULL;
     }
@@ -38,6 +39,7 @@ bool acc_client_destroy(acc_client_t *client) {
     if (client == NULL) {
         return false;
     }
+
     if (client->socket != NULL) {
         bool has_error = udp_socket_destroy(client->socket);
         if (has_error == true) {
@@ -105,6 +107,8 @@ bool acc_client_send(acc_client_t *client, acc_server_request_t *request) {
         return true;
     }
 
+    fprintf(stdout, "Send Message: %llu - %d", total, sent);
+
     if ((size_t)sent != total) {
         acc_last_error = ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_SENT;
         return true;
@@ -123,7 +127,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
         return true;
     }
 
-    size_t size = 1024 * 10;
+    size_t size = 1024 * 100;
     char *buffer = malloc(size);
     if (buffer == NULL) {
         acc_last_error = ACC_STATUS_MEMORY_ALLOCATION_ERROR;
@@ -137,7 +141,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
         return true;
     }
 
-    size_t offset;
+    size_t offset = 1;
     response->type = buffer[0];
 
     switch (response->type) {
@@ -149,7 +153,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_registration_result(response->data.registration_result, buffer);
+        acc_read_registration_result(response->data.registration_result, buffer, &offset);
         break;
     case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
         response->data.real_time_update = malloc(sizeof(acc_rt_update_t));
@@ -159,7 +163,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_real_time_update(response->data.real_time_update, buffer);
+        acc_read_real_time_update(response->data.real_time_update, buffer, &offset);
         break;
     case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
         response->data.real_time_car_update = malloc(sizeof(acc_rt_car_update_t));
@@ -169,7 +173,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_real_time_car_update(response->data.real_time_car_update, buffer);
+        acc_read_real_time_car_update(response->data.real_time_car_update, buffer, &offset);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST:
         response->data.entry_list = malloc(sizeof(acc_entry_list_t));
@@ -179,7 +183,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_entry_list(response->data.entry_list, buffer);
+        acc_read_entry_list(response->data.entry_list, buffer, &offset);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
         response->data.entry_list_car = malloc(sizeof(acc_car_info_t));
@@ -189,7 +193,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_entry_list_car(response->data.entry_list_car, buffer);
+        acc_read_entry_list_car(response->data.entry_list_car, buffer, &offset);
         break;
     case ACC_INBOUND_MESSAGE_TRACK_DATA:
         response->data.track_data = malloc(sizeof(acc_track_data_t));
@@ -199,7 +203,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_track_data(response->data.track_data, buffer);
+        acc_read_track_data(response->data.track_data, buffer, &offset);
         break;
     case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
         response->data.broadcasting_event = malloc(sizeof(acc_broadcasting_event_t));
@@ -209,7 +213,7 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
             return true;
         }
 
-        offset = acc_read_broadcasting_event(response->data.broadcasting_event, buffer);
+        acc_read_broadcasting_event(response->data.broadcasting_event, buffer, &offset);
         break;
     default:
         acc_last_error = ACC_STATUS_INVALID_INBOUND_MESSAGE_TYPE;
@@ -218,6 +222,12 @@ bool acc_client_receive(acc_client_t *client, acc_server_response_t *response) {
     }
 
     if (offset > size) {
+        acc_last_error = ACC_STATUS_INBOUND_BUFFER_TOO_SMALL;
+        free(buffer);
+        return true;
+    }
+
+    if (offset > (size_t)received) {
         acc_last_error = ACC_STATUS_INBOUND_BUFFER_TOO_SMALL;
         free(buffer);
         return true;

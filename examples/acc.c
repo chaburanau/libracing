@@ -101,6 +101,10 @@ void register_connection(acc_client_t *client) {
     bool has_error = acc_client_send(client, &request);
     check_error(has_error, "register_connection");
     fprintf(stdout, "Connection has been registered...\n");
+    free(request.data.register_application->display_name);
+    free(request.data.register_application->connection_password);
+    free(request.data.register_application->command_password);
+    free(request.data.register_application);
 }
 
 void unregister_connection(acc_client_t *client) {
@@ -112,28 +116,33 @@ void unregister_connection(acc_client_t *client) {
     bool has_error = acc_client_send(client, &request);
     check_error(has_error, "unregister_connection");
     fprintf(stdout, "Connection has been unregistered...\n");
+    free(request.data.unregister_application);
 }
 
 void request_entry_list(acc_client_t *client) {
     acc_server_request_t request;
 
     request.type = ACC_OUTBOUND_MESSAGE_REQUEST_ENTRY_LIST;
+    request.data.request_entry_list = malloc(sizeof(acc_req_entry_list_t));
     request.data.request_entry_list->connection_id = connection_id;
 
     bool has_error = acc_client_send(client, &request);
     check_error(has_error, "request_entry_list");
-    fprintf(stdout, "Entry list has been requested...\n");
+    fprintf(stdout, "Entry list has been requested for connection: %d...\n", connection_id);
+    free(request.data.request_entry_list);
 }
 
 void request_track_data(acc_client_t *client) {
     acc_server_request_t request;
 
     request.type = ACC_OUTBOUND_MESSAGE_REQUEST_TRACK_DATA;
+    request.data.request_track_data = malloc(sizeof(acc_req_entry_list_t));
     request.data.request_track_data->connection_id = connection_id;
 
     bool has_error = acc_client_send(client, &request);
     check_error(has_error, "request_track_data");
-    fprintf(stdout, "Track Data has been requested...\n");
+    fprintf(stdout, "Track Data has been requested for connection: %d...\n", connection_id);
+    free(request.data.request_track_data);
 }
 
 int main(int argc, char *argv[]) {
@@ -149,18 +158,18 @@ int main(int argc, char *argv[]) {
     register_connection(client);
     receive_response(client);
 
-    request_track_data(client);
-    receive_response(client);
-
     request_entry_list(client);
-    receive_response(client);
+    request_track_data(client);
 
     for (int i = 0; i < 10; i++) {
         receive_response(client);
     }
 
     unregister_connection(client);
-    receive_response(client);
+
+    for (int i = 0; i < 10; i++) {
+        receive_response(client);
+    }
 
     return 0;
 }

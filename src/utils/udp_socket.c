@@ -12,6 +12,7 @@
 
 static int32_t udp_socket_address_size = sizeof(SOCKADDR_IN);
 static int32_t udp_socket_last_error = 0;
+int32_t udp_socket_get_last_error(void) { return udp_socket_last_error; }
 
 typedef struct {
     SOCKADDR_IN _address;
@@ -38,7 +39,7 @@ udp_socket_t *udp_socket_create(const char *address, uint16_t port) {
     udp_socket->_socket = INVALID_SOCKET;
     udp_socket->_wsa_initialized = false;
 
-    const int32_t wsa_status = wsa_client_add_user();
+    int32_t wsa_status = wsa_client_add_user();
     if (wsa_status != 0) {
         udp_socket_last_error = wsa_status;
         udp_socket_destroy(udp_socket);
@@ -54,7 +55,7 @@ udp_socket_t *udp_socket_create(const char *address, uint16_t port) {
         return NULL;
     }
 
-    const int32_t inet_pton_status = inet_pton(AF_INET, address, &udp_socket->_address.sin_addr);
+    int32_t inet_pton_status = inet_pton(AF_INET, address, &udp_socket->_address.sin_addr);
     if (inet_pton_status != 1) {
         udp_socket_last_error = WSAGetLastError();
         udp_socket_destroy(udp_socket);
@@ -99,7 +100,7 @@ int32_t udp_socket_send(udp_socket_t *udp_socket, char *data, size_t size) {
         return -1000;
     }
 
-    const int32_t bytes_sent = sendto(udp_socket->_socket, data, (int32_t)size, 0, _address(udp_socket), udp_socket_address_size);
+    int32_t bytes_sent = sendto(udp_socket->_socket, data, (int32_t)size, 0, _address(udp_socket), udp_socket_address_size);
     if (bytes_sent == SOCKET_ERROR) {
         udp_socket_last_error = WSAGetLastError();
         return -1;
@@ -114,15 +115,11 @@ int32_t udp_socket_receive(udp_socket_t *udp_socket, char *data, size_t size) {
         return -1;
     }
 
-    const int32_t bytes_received = recvfrom(udp_socket->_socket, data, (int32_t)size, 0, _address(udp_socket), &udp_socket_address_size);
+    int32_t bytes_received = recvfrom(udp_socket->_socket, data, (int32_t)size, 0, _address(udp_socket), &udp_socket_address_size);
     if (bytes_received == SOCKET_ERROR) {
         udp_socket_last_error = WSAGetLastError();
         return -1;
     }
 
     return bytes_received;
-}
-
-int32_t udp_socket_get_last_error(void) {
-    return udp_socket_last_error;
 }

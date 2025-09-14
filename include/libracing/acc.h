@@ -217,7 +217,7 @@ typedef struct {
     uint8_t car_model_type;                // Model type of the car
     uint8_t cup_category;                  // Cup category
     string_t *team_name;                   // Team name of the car
-    int32_t nationality;                   // Nationality Enum
+    uint16_t nationality;                  // Nationality Enum
     int32_t race_number;                   // Car number
     uint8_t current_driver_index;          // Index from a Drivers array
     acc_driver_info_array_t *drivers_info; // A Drivers array
@@ -379,6 +379,39 @@ typedef struct {
     acc_inbound_message_type_t type;
     acc_server_response_data_t data;
 } acc_server_response_t;
+
+// void acc_driver_info_create(acc_driver_info_t *object);
+// void acc_driver_info_destroy(acc_driver_info_t *object);
+// void acc_driver_info_array_create(acc_driver_info_array_t *object);
+// void acc_driver_info_array_destroy(acc_driver_info_array_t *object);
+// void acc_car_info_create(acc_car_info_t *object);
+// void acc_car_info_destroy(acc_car_info_t *object);
+// void acc_lap_info_create(acc_lap_info_t *object);
+// void acc_lap_info_destroy(acc_lap_info_t *object);
+// void acc_track_data_create(acc_track_data_t *object);
+// void acc_track_data_destroy(acc_track_data_t *object);
+// void acc_broadcasting_event_create(acc_broadcasting_event_t *object);
+// void acc_broadcasting_event_destroy(acc_broadcasting_event_t *object);
+// void acc_rt_car_update_create(acc_rt_car_update_t *object);
+// void acc_rt_car_update_destroy(acc_rt_car_update_t *object);
+// void acc_rt_update_create(acc_rt_update_t *object);
+// void acc_rt_update_destroy(acc_rt_update_t *object);
+// void acc_reg_result_create(acc_reg_result_t *object);
+// void acc_reg_result_destroy(acc_reg_result_t *object);
+// void acc_entry_list_create(acc_entry_list_t *object);
+// void acc_entry_list_destroy(acc_entry_list_t *object);
+// void acc_reg_app_create(acc_reg_app_t *object);
+// void acc_reg_app_destroy(acc_reg_app_t *object);
+// void acc_change_hud_page_create(acc_change_hud_page_t *object);
+// void acc_change_hud_page_destroy(acc_change_hud_page_t *object);
+// void acc_change_focus(acc_change_focus_t *object);
+// void acc_change_focus_destroy(acc_change_focus_t *object);
+// void acc_req_instant_replay_create(acc_req_instant_replay_t *object);
+// void acc_req_instant_replay_destroy(acc_req_instant_replay_t *object);
+// void acc_server_request_create(acc_server_request_t *object);
+// void acc_server_request_destroy(acc_server_request_t *object);
+// void acc_server_response_create(acc_server_response_t *object);
+// void acc_server_response_destroy(acc_server_response_t *object);
 
 typedef struct ACClient acc_client_t;
 
