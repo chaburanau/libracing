@@ -175,7 +175,7 @@ void acc_read_entry_list(acc_entry_list_t *list, char *buffer, size_t *offset) {
 }
 
 void acc_read_entry_list_car(acc_car_info_t *data, char *buffer, size_t *offset) {
-    uint8_t size = 0;
+    data->team_name = malloc(sizeof(string_t));
 
     acc_read_uint16_t(&data->car_index, buffer, offset);           // 1. Connection ID
     acc_read_uint8_t(&data->car_model_type, buffer, offset);       // 2. Car Model Type
@@ -185,6 +185,7 @@ void acc_read_entry_list_car(acc_car_info_t *data, char *buffer, size_t *offset)
     acc_read_uint8_t(&data->current_driver_index, buffer, offset); // 6. Current Driver Index
     acc_read_uint16_t(&data->nationality, buffer, offset);         // 7. Nationality
 
+    uint8_t size = 0;
     acc_read_uint8_t(&size, buffer, offset); // 8. Drivers Size
 
     data->drivers_info = malloc(sizeof(acc_driver_info_array_t));
@@ -192,6 +193,10 @@ void acc_read_entry_list_car(acc_car_info_t *data, char *buffer, size_t *offset)
     data->drivers_info->data = malloc(sizeof(acc_driver_info_t) * (size_t)size);
 
     for (uint8_t i = 0; i < size; i++) {
+        data->drivers_info->data[i].first_name = malloc(sizeof(string_t));
+        data->drivers_info->data[i].last_name = malloc(sizeof(string_t));
+        data->drivers_info->data[i].short_name = malloc(sizeof(string_t));
+
         acc_read_string(data->drivers_info->data[i].first_name, buffer, offset);     // 9. First Name
         acc_read_string(data->drivers_info->data[i].last_name, buffer, offset);      // 10. Last Name
         acc_read_string(data->drivers_info->data[i].short_name, buffer, offset);     // 11. Short Name
@@ -200,15 +205,12 @@ void acc_read_entry_list_car(acc_car_info_t *data, char *buffer, size_t *offset)
     }
 }
 
-// TODO :: hashmap approach
 void acc_read_track_data(acc_track_data_t *data, char *buffer, size_t *offset) {
     uint8_t camera_set_size = 0;
+    uint8_t camera_size = 0;
     uint8_t hud_page_size = 0;
 
     data->track_name = malloc(sizeof(string_t));
-    data->camera_sets = malloc(sizeof(string_array_t));
-    data->cameras = malloc(sizeof(string_array_t));
-    data->hud_pages = malloc(sizeof(string_array_t));
 
     acc_read_int32_t(&data->connection_id, buffer, offset); // 1. Connection ID
     acc_read_string(data->track_name, buffer, offset);      // 2. Track Name
@@ -216,30 +218,34 @@ void acc_read_track_data(acc_track_data_t *data, char *buffer, size_t *offset) {
     acc_read_int32_t(&data->track_length, buffer, offset);  // 4. Track Length
     acc_read_uint8_t(&camera_set_size, buffer, offset);     // 5. Camera Set Size
 
+    data->camera_sets = malloc(sizeof(acc_camera_sets_t));
+    data->camera_sets->data = malloc(sizeof(acc_camera_set_t) * (size_t)camera_set_size);
     data->camera_sets->size = (uint32_t)camera_set_size;
-    data->camera_sets->data = malloc(sizeof(string_t) * (size_t)camera_set_size);
 
     for (uint8_t camera_set_index = 0; camera_set_index < camera_set_size; camera_set_index++) {
-        uint8_t camera_size = 0;
-        uint32_t previous_camera_size = data->cameras->size;
+        data->camera_sets->data[camera_set_index].camera_set = malloc(sizeof(string_t));
 
-        acc_read_string(data->camera_sets->data[camera_set_index], buffer, offset); // 6. Camera Set Item
-        acc_read_uint8_t(&camera_size, buffer, offset);                             // 7. Camera Size
+        acc_read_string(data->camera_sets->data[camera_set_index].camera_set, buffer, offset); // 6. Camera Set Item
+        acc_read_uint8_t(&camera_size, buffer, offset);                                        // 7. Cameras Size
 
-        data->cameras->size += (uint32_t)camera_size;
-        data->cameras->data = realloc(data->cameras->data, sizeof(string_t) * data->cameras->size);
+        data->camera_sets->data[camera_set_index].cameras = malloc(sizeof(string_array_t));
+        data->camera_sets->data[camera_set_index].cameras->data = malloc(sizeof(string_t) * (size_t)camera_size);
+        data->camera_sets->data[camera_set_index].cameras->size = (uint32_t)camera_size;
 
         for (uint8_t camera_index = 0; camera_index < camera_size; camera_index++) {
-            acc_read_string(data->cameras->data[previous_camera_size + camera_index], buffer, offset); // 8. Camera Item
+            data->camera_sets->data[camera_set_index].cameras->data[camera_index] = malloc(sizeof(string_t));
+            acc_read_string(data->camera_sets->data[camera_set_index].cameras->data[camera_index], buffer, offset); // 8. Camera Item
         }
     }
 
     acc_read_uint8_t(&hud_page_size, buffer, offset); // 9. HUD Page Size
 
-    data->hud_pages->size = (uint32_t)hud_page_size;
+    data->hud_pages = malloc(sizeof(string_array_t));
     data->hud_pages->data = malloc(sizeof(string_t) * (size_t)hud_page_size);
+    data->hud_pages->size = (uint32_t)hud_page_size;
 
-    for (int index = 0; index < camera_set_size; index++) {
+    for (int index = 0; index < hud_page_size; index++) {
+        data->hud_pages->data[index] = malloc(sizeof(string_t));
         acc_read_string(data->hud_pages->data[index], buffer, offset); // 10. HUD Page Item
     }
 }

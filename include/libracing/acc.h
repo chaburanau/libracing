@@ -200,6 +200,16 @@ typedef enum {
 } acc_inbound_message_type_t;
 
 typedef struct {
+    string_t *camera_set;    // Camera Set Name
+    string_array_t *cameras; // Cameras array
+} acc_camera_set_t;
+
+typedef struct {
+    uint32_t size;          // Size of the array
+    acc_camera_set_t *data; // Elements of the array
+} acc_camera_sets_t;
+
+typedef struct {
     string_t *first_name; // Driver's First Name
     string_t *last_name;  // Driver's Last Name
     string_t *short_name; // Short Driver Name
@@ -234,13 +244,12 @@ typedef struct {
 } acc_lap_info_t;
 
 typedef struct {
-    int32_t connection_id;       // Connection ID
-    string_t *track_name;        // Name of the track
-    int32_t track_id;            // ID of the track
-    int32_t track_length;        // Track length (in meters)
-    string_array_t *camera_sets; // Available Camera Sets (array)
-    string_array_t *cameras;     // Available Cameras (array). Format is "{camera_sets_index}:{camera_name}"
-    string_array_t *hud_pages;   // Available HUD Pages (array)
+    int32_t connection_id;          // Connection ID
+    string_t *track_name;           // Name of the track
+    int32_t track_id;               // ID of the track
+    int32_t track_length;           // Track length (in meters)
+    acc_camera_sets_t *camera_sets; // Available Camera Sets (array)
+    string_array_t *hud_pages;      // Available HUD Pages (array)
 } acc_track_data_t;
 
 typedef struct {

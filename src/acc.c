@@ -94,26 +94,26 @@ bool acc_client_send(acc_client_t *client, acc_server_request_t *request) {
         return true;
     }
 
-    free(buffer);
-
     if (status != ACC_STATUS_OK) {
         acc_last_error = status;
+        free(buffer);
         return true;
     }
 
     int32_t sent = udp_socket_send(client->socket, buffer, total);
     if (sent < 0) {
         acc_last_error = udp_socket_get_last_error();
+        free(buffer);
         return true;
     }
-
-    fprintf(stdout, "Send Message: %llu - %d", total, sent);
 
     if ((size_t)sent != total) {
         acc_last_error = ACC_STATUS_UNEXPECTED_AMOUNT_OF_BYTES_SENT;
+        free(buffer);
         return true;
     }
 
+    free(buffer);
     return false;
 }
 
