@@ -57,7 +57,7 @@ bool ac_client_destroy(ac_client_t *client) {
     return false;
 }
 
-void ac_fix_string(char *string, int32_t size) {
+static inline void ac_fix_string(char *string, int32_t size) {
     bool found = false;
 
     for (int i = 0; i < size; i++) {
@@ -70,7 +70,7 @@ void ac_fix_string(char *string, int32_t size) {
     }
 }
 
-bool ac_client_send(ac_client_t *client, ac_operation_t operation) {
+static bool ac_client_send(ac_client_t *client, ac_operation_t operation) {
     if (client == NULL) {
         ac_last_error = AC_STATUS_CLIENT_NOT_INITIALIZED;
         return true;
@@ -102,7 +102,7 @@ bool ac_client_send(ac_client_t *client, ac_operation_t operation) {
     return false;
 }
 
-bool ac_set_response_handshake(ac_event_t *event, char *buffer) {
+static bool ac_set_response_handshake(ac_event_t *event, char *buffer) {
     event->type = AC_EVENT_TYPE_HANDSHAKE;
 
     event->data.handshake = malloc(sizeof(ac_response_t));
@@ -121,7 +121,7 @@ bool ac_set_response_handshake(ac_event_t *event, char *buffer) {
     return false;
 }
 
-bool ac_set_response_rt_car_info(ac_event_t *event, char *buffer) {
+static bool ac_set_response_rt_car_info(ac_event_t *event, char *buffer) {
     event->type = AC_EVENT_TYPE_CAR_INFO;
 
     event->data.car_info = malloc(sizeof(ac_rt_car_info));
@@ -135,7 +135,7 @@ bool ac_set_response_rt_car_info(ac_event_t *event, char *buffer) {
     return false;
 }
 
-bool ac_set_response_rt_lap_info(ac_event_t *event, char *buffer) {
+static bool ac_set_response_rt_lap_info(ac_event_t *event, char *buffer) {
     event->type = AC_EVENT_TYPE_LAP_INFO;
 
     event->data.lap_info = malloc(sizeof(ac_rt_lap_info));

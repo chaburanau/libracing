@@ -8,7 +8,7 @@
 static WSADATA wsa_client_data;
 static int wsa_client_users_counter = 0;
 
-static int32_t wsa_client_add_user(void) {
+int32_t wsa_client_add_user(void) {
     if (wsa_client_users_counter < 0) {
         return -1;
     }
@@ -24,7 +24,7 @@ static int32_t wsa_client_add_user(void) {
     return 0;
 }
 
-static int32_t wsa_client_remove_user(void) {
+int32_t wsa_client_remove_user(void) {
     if (wsa_client_users_counter < 0) {
         return -1;
     }

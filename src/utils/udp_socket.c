@@ -90,7 +90,7 @@ bool udp_socket_destroy(udp_socket_t *udp_socket) {
     return false;
 }
 
-struct sockaddr *_address(udp_socket_t *udp_socket) {
+static struct sockaddr *_address(udp_socket_t *udp_socket) {
     return (struct sockaddr *)&udp_socket->_address;
 }
 

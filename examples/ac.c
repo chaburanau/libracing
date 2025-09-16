@@ -1,11 +1,9 @@
+#include "../src/ac.c"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define __STD_UTF_16__
-
-#include "../src/ac.c"
 
 void check_error(bool has_error, char *operation) {
     if (has_error == true) {
@@ -64,11 +62,9 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "Starting...\n");
 
     ac_client_t *updater = ac_client_create("127.0.0.1", 9996);
-    if (updater == NULL)
-        check_error(true, "ac_client_create");
+    check_error(updater == NULL, "ac_client_create");
     ac_client_t *spotter = ac_client_create("127.0.0.1", 9996);
-    if (spotter == NULL)
-        check_error(true, "ac_client_create");
+    check_error(spotter == NULL, "ac_client_create");
 
     fprintf(stdout, "Clients have been initialized...\n");
 
