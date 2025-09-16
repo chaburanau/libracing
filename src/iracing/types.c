@@ -1,7 +1,8 @@
 #pragma once
 
-#include "types.h"
 #include <stdbool.h>
+#include <stdint.h>
+#include "../utils/types.c"
 
 #define IRACING_VER 2
 #define IRACING_MAX_BUFFERS 4

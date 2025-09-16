@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <windows.h>
 
-#include "../include/libracing/iracing.h"
+#include "./types.c"
 
 #define IRACING_MEM_MAP_FILE_NAME "Local\\IRSDKMemMapFileName"
 
