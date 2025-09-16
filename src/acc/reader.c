@@ -4,8 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../include/libracing/acc.h"
-#include "../../include/libracing/types.h"
+#include "./types.c"
 
 void acc_read_int16_t(int16_t *data, char *buffer, size_t *offset) {
     memcpy(data, buffer + *offset, sizeof(int16_t));
@@ -62,7 +61,7 @@ void acc_read_lap(acc_lap_info_t *data, char *buffer, size_t *offset) {
     acc_read_uint16_t(&data->driver_index, buffer, offset); // 3. Driver Index
     acc_read_uint8_t(&splits_size, buffer, offset);         // 4. Splits Size
 
-    data->splits = malloc(sizeof(int32_array_t));
+    data->splits = malloc(sizeof(int32s_t));
     data->splits->size = (uint32_t)splits_size;
     data->splits->data = malloc(sizeof(int32_t) * (size_t)splits_size);
 
@@ -88,7 +87,7 @@ void acc_read_lap(acc_lap_info_t *data, char *buffer, size_t *offset) {
     }
 
     if (data->splits->size < 3) {
-        uint32_t old = data->splits->size;
+        size_t old = data->splits->size;
         data->splits->size = 3;
         data->splits->data = realloc(data->splits->data, sizeof(int32_t) * data->splits->size);
 
@@ -165,7 +164,7 @@ void acc_read_entry_list(acc_entry_list_t *list, char *buffer, size_t *offset) {
     acc_read_int32_t(&list->connection_id, buffer, offset); // 1. Connection ID
     acc_read_uint16_t(&size, buffer, offset);               // 2. Entries Size
 
-    list->indexes = malloc(sizeof(uint16_array_t));
+    list->indexes = malloc(sizeof(uint16s_t));
     list->indexes->size = (uint32_t)size;
     list->indexes->data = malloc(sizeof(uint16_t) * (size_t)size);
 
@@ -228,25 +227,23 @@ void acc_read_track_data(acc_track_data_t *data, char *buffer, size_t *offset) {
         acc_read_string(data->camera_sets->data[camera_set_index].camera_set, buffer, offset); // 6. Camera Set Item
         acc_read_uint8_t(&camera_size, buffer, offset);                                        // 7. Cameras Size
 
-        data->camera_sets->data[camera_set_index].cameras = malloc(sizeof(string_array_t));
+        data->camera_sets->data[camera_set_index].cameras = malloc(sizeof(strings_t));
         data->camera_sets->data[camera_set_index].cameras->data = malloc(sizeof(string_t) * (size_t)camera_size);
         data->camera_sets->data[camera_set_index].cameras->size = (uint32_t)camera_size;
 
         for (uint8_t camera_index = 0; camera_index < camera_size; camera_index++) {
-            data->camera_sets->data[camera_set_index].cameras->data[camera_index] = malloc(sizeof(string_t));
-            acc_read_string(data->camera_sets->data[camera_set_index].cameras->data[camera_index], buffer, offset); // 8. Camera Item
+            acc_read_string(&data->camera_sets->data[camera_set_index].cameras->data[camera_index], buffer, offset); // 8. Camera Item
         }
     }
 
     acc_read_uint8_t(&hud_page_size, buffer, offset); // 9. HUD Page Size
 
-    data->hud_pages = malloc(sizeof(string_array_t));
+    data->hud_pages = malloc(sizeof(strings_t));
     data->hud_pages->data = malloc(sizeof(string_t) * (size_t)hud_page_size);
     data->hud_pages->size = (uint32_t)hud_page_size;
 
     for (int index = 0; index < hud_page_size; index++) {
-        data->hud_pages->data[index] = malloc(sizeof(string_t));
-        acc_read_string(data->hud_pages->data[index], buffer, offset); // 10. HUD Page Item
+        acc_read_string(&data->hud_pages->data[index], buffer, offset); // 10. HUD Page Item
     }
 }
 

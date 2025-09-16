@@ -1,4 +1,5 @@
-#include "../src/acc.c"
+#include "../src/acc/client.c"
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -31,7 +32,7 @@ void receive_response(acc_client_t *client) {
         fprintf(stdout, "\tConnection ID: %d\n", response.data.registration_result->connection_id);
         fprintf(stdout, "\tConnection Success: %d\n", response.data.registration_result->connection_success);
         fprintf(stdout, "\tIs Read Only: %d\n", response.data.registration_result->is_read_only);
-        fprintf(stdout, "\tError Message Size: %d\n", response.data.registration_result->error_message->size);
+        fprintf(stdout, "\tError Message Size: %llu\n", response.data.registration_result->error_message->size);
         fprintf(stdout, "\tError Message Data: %s\n", response.data.registration_result->error_message->data);
 
         connection_id = response.data.registration_result->connection_id;
@@ -62,14 +63,14 @@ void receive_response(acc_client_t *client) {
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST:
         fprintf(stdout, "\tConnection ID: %d\n", response.data.entry_list->connection_id);
-        fprintf(stdout, "\tIndexes Size: %d\n", response.data.entry_list->indexes->size);
+        fprintf(stdout, "\tIndexes Size: %llu\n", response.data.entry_list->indexes->size);
 
         free(response.data.entry_list);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
         fprintf(stdout, "\tCar Index: %d\n", response.data.entry_list_car->car_index);
         fprintf(stdout, "\tCar Model Type: %d\n", response.data.entry_list_car->car_model_type);
-        fprintf(stdout, "\tTeam Name Size: %d\n", response.data.entry_list_car->team_name->size);
+        fprintf(stdout, "\tTeam Name Size: %llu\n", response.data.entry_list_car->team_name->size);
         fprintf(stdout, "\tTeam Name Data: %s\n", response.data.entry_list_car->team_name->data);
         fprintf(stdout, "\tNationality: %d\n", response.data.entry_list_car->nationality);
         fprintf(stdout, "\tRace Number: %d\n", response.data.entry_list_car->race_number);
@@ -80,7 +81,7 @@ void receive_response(acc_client_t *client) {
     case ACC_INBOUND_MESSAGE_TRACK_DATA:
         fprintf(stdout, "\tConnection ID: %d\n", response.data.track_data->connection_id);
         fprintf(stdout, "\tTrack ID: %d\n", response.data.track_data->track_id);
-        fprintf(stdout, "\tTrack Name Size: %d\n", response.data.track_data->track_name->size);
+        fprintf(stdout, "\tTrack Name Size: %llu\n", response.data.track_data->track_name->size);
         fprintf(stdout, "\tTrack Name Data: %s\n", response.data.track_data->track_name->data);
         fprintf(stdout, "\tTrack Length: %d\n", response.data.track_data->track_length);
 
@@ -90,7 +91,7 @@ void receive_response(acc_client_t *client) {
         fprintf(stdout, "\tCar Index: %d\n", response.data.broadcasting_event->car_index);
         fprintf(stdout, "\tType: %d\n", response.data.broadcasting_event->type);
         fprintf(stdout, "\tTime: %d\n", response.data.broadcasting_event->time);
-        fprintf(stdout, "\tMessage Size: %d\n", response.data.broadcasting_event->message->size);
+        fprintf(stdout, "\tMessage Size: %llu\n", response.data.broadcasting_event->message->size);
         fprintf(stdout, "\tMessage Data: %s\n", response.data.broadcasting_event->message->data);
 
         free(response.data.broadcasting_event);

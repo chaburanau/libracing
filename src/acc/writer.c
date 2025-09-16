@@ -5,8 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../include/libracing/acc.h"
-#include "../../include/libracing/types.h"
+#include "./types.c"
 
 void acc_write_type(char *buffer, size_t *offset, void *data, size_t size) {
     memcpy(buffer + *offset, data, size);

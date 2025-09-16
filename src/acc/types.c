@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "types.h"
+#include "../utils/types.c"
 
 #define ACC_BROADCASTING_PROTOCOL_VERSION 4
 
@@ -200,14 +200,11 @@ typedef enum {
 } acc_inbound_message_type_t;
 
 typedef struct {
-    string_t *camera_set;    // Camera Set Name
-    string_array_t *cameras; // Cameras array
+    string_t *camera_set; // Camera Set Name
+    strings_t *cameras;   // Cameras array
 } acc_camera_set_t;
 
-typedef struct {
-    uint32_t size;          // Size of the array
-    acc_camera_set_t *data; // Elements of the array
-} acc_camera_sets_t;
+DEFINE_ARRAY_TYPE(acc_camera_set_t, acc_camera_sets_t)
 
 typedef struct {
     string_t *first_name; // Driver's First Name
@@ -235,7 +232,7 @@ typedef struct {
 
 typedef struct {
     int32_t lap_time;       // Lap time (in ms)
-    int32_array_t *splits;  // Lap split times
+    int32s_t *splits;       // Lap split times
     uint16_t car_index;     // Index from a Cars array
     uint16_t driver_index;  // Index from a Drivers array
     bool is_invalid;        // Flag if a lap is invalid
@@ -249,7 +246,7 @@ typedef struct {
     int32_t track_id;               // ID of the track
     int32_t track_length;           // Track length (in meters)
     acc_camera_sets_t *camera_sets; // Available Camera Sets (array)
-    string_array_t *hud_pages;      // Available HUD Pages (array)
+    strings_t *hud_pages;           // Available HUD Pages (array)
 } acc_track_data_t;
 
 typedef struct {
@@ -316,7 +313,7 @@ typedef struct {
 
 typedef struct {
     int32_t connection_id;
-    uint16_array_t *indexes;
+    uint16s_t *indexes;
 } acc_entry_list_t;
 
 typedef struct {
