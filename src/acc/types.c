@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "../utils/types.c"
@@ -200,39 +201,54 @@ typedef enum {
 } acc_inbound_message_type_t;
 
 typedef struct {
-    string_t *camera_set; // Camera Set Name
-    strings_t *cameras;   // Cameras array
+    string_t camera_set; // Camera Set Name
+    strings_t cameras;   // Cameras array
 } acc_camera_set_t;
 
-DEFINE_ARRAY_TYPE(acc_camera_set_t, acc_camera_sets_t)
-
 typedef struct {
-    string_t *first_name; // Driver's First Name
-    string_t *last_name;  // Driver's Last Name
-    string_t *short_name; // Short Driver Name
+    string_t first_name;  // Driver's First Name
+    string_t last_name;   // Driver's Last Name
+    string_t short_name;  // Short Driver Name
     uint8_t category;     // DriverCategory Enum
     uint16_t nationality; // Nationality Enum
 } acc_driver_info_t;
 
-typedef struct {
-    uint32_t size;
-    acc_driver_info_t *data;
-} acc_driver_info_array_t;
+DEFINE_ARRAY_TYPE(acc_camera_set_t, acc_camera_sets_t)
+DEFINE_ARRAY_TYPE(acc_driver_info_t, acc_driver_infos_t)
+
+void acc_driver_infos_free(acc_driver_infos_t *infos) {
+    for (size_t index = 0; index < infos->size; index++) {
+        string_t_free(&infos->data[index].first_name);
+        string_t_free(&infos->data[index].last_name);
+        string_t_free(&infos->data[index].short_name);
+    }
+
+    acc_driver_infos_t_free(infos);
+}
+
+void acc_camera_sets_free(acc_camera_sets_t *sets) {
+    for (size_t index = 0; index < sets->size; index++) {
+        string_t_free(&sets->data[index].camera_set);
+        strings_free(&sets->data[index].cameras);
+    }
+
+    acc_camera_sets_t_free(sets);
+}
 
 typedef struct {
-    uint16_t car_index;                    // Index from a Cars array
-    uint8_t car_model_type;                // Model type of the car
-    uint8_t cup_category;                  // Cup category
-    string_t *team_name;                   // Team name of the car
-    uint16_t nationality;                  // Nationality Enum
-    int32_t race_number;                   // Car number
-    uint8_t current_driver_index;          // Index from a Drivers array
-    acc_driver_info_array_t *drivers_info; // A Drivers array
+    uint16_t car_index;              // Index from a Cars array
+    uint8_t car_model_type;          // Model type of the car
+    uint8_t cup_category;            // Cup category
+    string_t team_name;              // Team name of the car
+    uint16_t nationality;            // Nationality Enum
+    int32_t race_number;             // Car number
+    uint8_t current_driver_index;    // Index from a Drivers array
+    acc_driver_infos_t driver_infos; // A Drivers array
 } acc_car_info_t;
 
 typedef struct {
     int32_t lap_time;       // Lap time (in ms)
-    int32s_t *splits;       // Lap split times
+    int32s_t splits;        // Lap split times
     uint16_t car_index;     // Index from a Cars array
     uint16_t driver_index;  // Index from a Drivers array
     bool is_invalid;        // Flag if a lap is invalid
@@ -241,17 +257,17 @@ typedef struct {
 } acc_lap_info_t;
 
 typedef struct {
-    int32_t connection_id;          // Connection ID
-    string_t *track_name;           // Name of the track
-    int32_t track_id;               // ID of the track
-    int32_t track_length;           // Track length (in meters)
-    acc_camera_sets_t *camera_sets; // Available Camera Sets (array)
-    strings_t *hud_pages;           // Available HUD Pages (array)
+    int32_t connection_id;         // Connection ID
+    string_t track_name;           // Name of the track
+    int32_t track_id;              // ID of the track
+    int32_t track_length;          // Track length (in meters)
+    acc_camera_sets_t camera_sets; // Available Camera Sets (array)
+    strings_t hud_pages;           // Available HUD Pages (array)
 } acc_track_data_t;
 
 typedef struct {
     uint8_t type;      // Broadcasting Event Type
-    string_t *message; // Broadcasting Event Message
+    string_t message;  // Broadcasting Event Message
     int32_t time;      // Broadcasting Event Time (in ms)
     int32_t car_index; // Index from a Cars array
 } acc_broadcasting_event_t;
@@ -291,8 +307,9 @@ typedef struct {
     uint16_t best_lap_car_index;     // Index from a Cars array
     uint16_t best_lap_driver_index;  // Index from a Drivers array
     int32_t focused_car_index;       // Index from a Cameras array
-    string_t *active_camera_set;     // Name of the active camera set
-    string_t *active_camera;         // Name of the active camera
+    string_t active_camera_set;      // Name of the active camera set
+    string_t active_camera;          // Name of the active camera
+    string_t current_hud_page;       // Name of the current HUD page
     bool is_replay_playing;          // Flag of replay is playing
     float replay_session_time;       // Replay session time
     float replay_remaining_time;     // Replay remaining time
@@ -301,26 +318,25 @@ typedef struct {
     uint8_t session_type;            // SessionType enum
     uint8_t ambient_temperature;     // Ambient temperature
     uint8_t track_temperature;       // Track temperature
-    string_t *current_hud_page;      // Name of the current HUD page
 } acc_rt_update_t;
 
 typedef struct {
     int32_t connection_id;
     bool connection_success;
     bool is_read_only;
-    string_t *error_message;
+    string_t error_message;
 } acc_reg_result_t;
 
 typedef struct {
     int32_t connection_id;
-    uint16s_t *indexes;
+    uint16s_t indexes;
 } acc_entry_list_t;
 
 typedef struct {
     int32_t update_interval;
-    string_t *display_name;
-    string_t *connection_password;
-    string_t *command_password;
+    string_t display_name;
+    string_t connection_password;
+    string_t command_password;
 } acc_reg_app_t;
 
 typedef struct {
@@ -337,14 +353,14 @@ typedef struct {
 
 typedef struct {
     int32_t connection_id;
-    string_t *hud_page;
+    string_t hud_page;
 } acc_change_hud_page_t;
 
 typedef struct {
     int32_t connection_id;
-    uint16_t *car_index;
-    string_t *camera_set;
-    string_t *camera;
+    int32_t car_index;
+    string_t camera_set;
+    string_t camera;
 } acc_change_focus_t;
 
 typedef struct {
@@ -352,8 +368,8 @@ typedef struct {
     float start_session_time;
     float duration; // In ms
     int32_t initial_focused_car_index;
-    string_t *initial_camera_set;
-    string_t *initial_camera;
+    string_t initial_camera_set;
+    string_t initial_camera;
 } acc_req_instant_replay_t;
 
 typedef union {
@@ -361,7 +377,7 @@ typedef union {
     acc_unreg_app_t *unregister_application;
     acc_req_entry_list_t *request_entry_list;
     acc_req_track_data_t *request_track_data;
-    acc_change_hud_page_t *request_hud_page;
+    acc_change_hud_page_t *change_hud_page;
     acc_change_focus_t *change_focus;
     acc_req_instant_replay_t *request_instant_replay;
 } acc_server_request_data_t;
@@ -386,44 +402,57 @@ typedef struct {
     acc_server_response_data_t data;
 } acc_server_response_t;
 
-// void acc_driver_info_create(acc_driver_info_t *object);
-// void acc_driver_info_destroy(acc_driver_info_t *object);
-// void acc_driver_info_array_create(acc_driver_info_array_t *object);
-// void acc_driver_info_array_destroy(acc_driver_info_array_t *object);
-// void acc_car_info_create(acc_car_info_t *object);
-// void acc_car_info_destroy(acc_car_info_t *object);
-// void acc_lap_info_create(acc_lap_info_t *object);
-// void acc_lap_info_destroy(acc_lap_info_t *object);
-// void acc_track_data_create(acc_track_data_t *object);
-// void acc_track_data_destroy(acc_track_data_t *object);
-// void acc_broadcasting_event_create(acc_broadcasting_event_t *object);
-// void acc_broadcasting_event_destroy(acc_broadcasting_event_t *object);
-// void acc_rt_car_update_create(acc_rt_car_update_t *object);
-// void acc_rt_car_update_destroy(acc_rt_car_update_t *object);
-// void acc_rt_update_create(acc_rt_update_t *object);
-// void acc_rt_update_destroy(acc_rt_update_t *object);
-// void acc_reg_result_create(acc_reg_result_t *object);
-// void acc_reg_result_destroy(acc_reg_result_t *object);
-// void acc_entry_list_create(acc_entry_list_t *object);
-// void acc_entry_list_destroy(acc_entry_list_t *object);
-// void acc_reg_app_create(acc_reg_app_t *object);
-// void acc_reg_app_destroy(acc_reg_app_t *object);
-// void acc_change_hud_page_create(acc_change_hud_page_t *object);
-// void acc_change_hud_page_destroy(acc_change_hud_page_t *object);
-// void acc_change_focus(acc_change_focus_t *object);
-// void acc_change_focus_destroy(acc_change_focus_t *object);
-// void acc_req_instant_replay_create(acc_req_instant_replay_t *object);
-// void acc_req_instant_replay_destroy(acc_req_instant_replay_t *object);
-// void acc_server_request_create(acc_server_request_t *object);
-// void acc_server_request_destroy(acc_server_request_t *object);
-// void acc_server_response_create(acc_server_response_t *object);
-// void acc_server_response_destroy(acc_server_response_t *object);
+void acc_server_response_free(acc_server_response_t *response) {
+    switch (response->type) {
+    case ACC_INBOUND_MESSAGE_REGISTRATION_RESULT:
+        string_t_free(&response->data.registration_result->error_message);
 
-typedef struct ACClient acc_client_t;
+        free(response->data.registration_result);
+        response->data.registration_result = NULL;
+        break;
+    case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
+        int32s_t_free(&response->data.real_time_update->best_session_lap.splits);
+        string_t_free(&response->data.real_time_update->active_camera_set);
+        string_t_free(&response->data.real_time_update->active_camera);
+        string_t_free(&response->data.real_time_update->current_hud_page);
 
-acc_client_t *acc_client_create(char *address, uint16_t port);
-bool acc_client_destroy(acc_client_t *client);
-int32_t acc_get_last_error(void);
+        free(response->data.real_time_update);
+        response->data.real_time_update = NULL;
+        break;
+    case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
+        int32s_t_free(&response->data.real_time_car_update->best_session_lap.splits);
+        int32s_t_free(&response->data.real_time_car_update->current_lap.splits);
+        int32s_t_free(&response->data.real_time_car_update->last_lap.splits);
 
-bool acc_client_send(acc_client_t *client, acc_server_request_t *request);
-bool acc_client_receive(acc_client_t *client, acc_server_response_t *response);
+        free(response->data.real_time_car_update);
+        response->data.real_time_car_update = NULL;
+        break;
+    case ACC_INBOUND_MESSAGE_ENTRY_LIST:
+        uint16s_t_free(&response->data.entry_list->indexes);
+
+        free(response->data.entry_list);
+        response->data.entry_list = NULL;
+        break;
+    case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
+        acc_driver_infos_free(&response->data.entry_list_car->driver_infos);
+        string_t_free(&response->data.entry_list_car->team_name);
+
+        free(response->data.entry_list_car);
+        response->data.entry_list_car = NULL;
+        break;
+    case ACC_INBOUND_MESSAGE_TRACK_DATA:
+        acc_camera_sets_free(&response->data.track_data->camera_sets);
+        string_t_free(&response->data.track_data->track_name);
+        strings_free(&response->data.track_data->hud_pages);
+
+        free(response->data.track_data);
+        response->data.track_data = NULL;
+        break;
+    case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
+        string_t_free(&response->data.broadcasting_event->message);
+
+        free(response->data.broadcasting_event);
+        response->data.broadcasting_event = NULL;
+        break;
+    }
+}

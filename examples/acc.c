@@ -12,10 +12,10 @@ void check_error(bool has_error, char *operation) {
     }
 }
 
-string_t *new_string(char *data, size_t size) {
-    string_t *result = malloc(sizeof(string_t));
-    result->size = (uint32_t)size;
-    result->data = data;
+string_t new_string(char *data, size_t size) {
+    string_t result;
+    result.size = (uint32_t)size;
+    result.data = data;
     return result;
 }
 
@@ -27,16 +27,17 @@ void receive_response(acc_client_t *client) {
 
     fprintf(stdout, "Response Type: %d\n", response.type);
 
+    if (response.type == ACC_INBOUND_MESSAGE_REGISTRATION_RESULT) {
+        connection_id = response.data.registration_result->connection_id;
+    }
+
     switch (response.type) {
     case ACC_INBOUND_MESSAGE_REGISTRATION_RESULT:
         fprintf(stdout, "\tConnection ID: %d\n", response.data.registration_result->connection_id);
         fprintf(stdout, "\tConnection Success: %d\n", response.data.registration_result->connection_success);
         fprintf(stdout, "\tIs Read Only: %d\n", response.data.registration_result->is_read_only);
-        fprintf(stdout, "\tError Message Size: %llu\n", response.data.registration_result->error_message->size);
-        fprintf(stdout, "\tError Message Data: %s\n", response.data.registration_result->error_message->data);
-
-        connection_id = response.data.registration_result->connection_id;
-        free(response.data.registration_result);
+        fprintf(stdout, "\tError Message Size: %llu\n", response.data.registration_result->error_message.size);
+        fprintf(stdout, "\tError Message Data: %s\n", response.data.registration_result->error_message.data);
         break;
     case ACC_INBOUND_MESSAGE_REAL_TIME_UPDATE:
         fprintf(stdout, "\tEvent Index: %d\n", response.data.real_time_update->event_index);
@@ -47,8 +48,6 @@ void receive_response(acc_client_t *client) {
         fprintf(stdout, "\tSession Type: %d\n", response.data.real_time_update->session_type);
         fprintf(stdout, "\tAmbient Temperature: %d\n", response.data.real_time_update->ambient_temperature);
         fprintf(stdout, "\tTrack Temperature: %d\n", response.data.real_time_update->track_temperature);
-
-        free(response.data.real_time_update);
         break;
     case ACC_INBOUND_MESSAGE_REAL_TIME_CAR_UPDATE:
         fprintf(stdout, "\tCar Index: %d\n", response.data.real_time_car_update->car_index);
@@ -58,48 +57,40 @@ void receive_response(acc_client_t *client) {
         fprintf(stdout, "\tPosition: %d\n", response.data.real_time_car_update->position);
         fprintf(stdout, "\tLaps: %d\n", response.data.real_time_car_update->laps);
         fprintf(stdout, "\tDrivers Count: %d\n", response.data.real_time_car_update->driver_count);
-
-        free(response.data.real_time_car_update);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST:
         fprintf(stdout, "\tConnection ID: %d\n", response.data.entry_list->connection_id);
-        fprintf(stdout, "\tIndexes Size: %llu\n", response.data.entry_list->indexes->size);
-
-        free(response.data.entry_list);
+        fprintf(stdout, "\tIndexes Size: %llu\n", response.data.entry_list->indexes.size);
         break;
     case ACC_INBOUND_MESSAGE_ENTRY_LIST_CAR:
         fprintf(stdout, "\tCar Index: %d\n", response.data.entry_list_car->car_index);
         fprintf(stdout, "\tCar Model Type: %d\n", response.data.entry_list_car->car_model_type);
-        fprintf(stdout, "\tTeam Name Size: %llu\n", response.data.entry_list_car->team_name->size);
-        fprintf(stdout, "\tTeam Name Data: %s\n", response.data.entry_list_car->team_name->data);
+        fprintf(stdout, "\tTeam Name Size: %llu\n", response.data.entry_list_car->team_name.size);
+        fprintf(stdout, "\tTeam Name Data: %s\n", response.data.entry_list_car->team_name.data);
         fprintf(stdout, "\tNationality: %d\n", response.data.entry_list_car->nationality);
         fprintf(stdout, "\tRace Number: %d\n", response.data.entry_list_car->race_number);
-        fprintf(stdout, "\tDrivers Info Size: %d\n", response.data.entry_list_car->drivers_info->size);
-
-        free(response.data.entry_list_car);
+        fprintf(stdout, "\tDrivers Info Size: %llu\n", response.data.entry_list_car->driver_infos.size);
         break;
     case ACC_INBOUND_MESSAGE_TRACK_DATA:
         fprintf(stdout, "\tConnection ID: %d\n", response.data.track_data->connection_id);
         fprintf(stdout, "\tTrack ID: %d\n", response.data.track_data->track_id);
-        fprintf(stdout, "\tTrack Name Size: %llu\n", response.data.track_data->track_name->size);
-        fprintf(stdout, "\tTrack Name Data: %s\n", response.data.track_data->track_name->data);
+        fprintf(stdout, "\tTrack Name Size: %llu\n", response.data.track_data->track_name.size);
+        fprintf(stdout, "\tTrack Name Data: %s\n", response.data.track_data->track_name.data);
         fprintf(stdout, "\tTrack Length: %d\n", response.data.track_data->track_length);
-
-        free(response.data.track_data);
         break;
     case ACC_INBOUND_MESSAGE_BROADCASTING_EVENT:
         fprintf(stdout, "\tCar Index: %d\n", response.data.broadcasting_event->car_index);
         fprintf(stdout, "\tType: %d\n", response.data.broadcasting_event->type);
         fprintf(stdout, "\tTime: %d\n", response.data.broadcasting_event->time);
-        fprintf(stdout, "\tMessage Size: %llu\n", response.data.broadcasting_event->message->size);
-        fprintf(stdout, "\tMessage Data: %s\n", response.data.broadcasting_event->message->data);
-
-        free(response.data.broadcasting_event);
+        fprintf(stdout, "\tMessage Size: %llu\n", response.data.broadcasting_event->message.size);
+        fprintf(stdout, "\tMessage Data: %s\n", response.data.broadcasting_event->message.data);
         break;
     default:
         fprintf(stdout, "\tUnknown Message Type\n");
-        break;
+        return;
     }
+
+    acc_server_response_free(&response);
 }
 
 void register_connection(acc_client_t *client) {
@@ -116,10 +107,6 @@ void register_connection(acc_client_t *client) {
     bool has_error = acc_client_send(client, &request);
     check_error(has_error, "register_connection");
     fprintf(stdout, "Connection has been registered...\n");
-
-    free(request.data.register_application->display_name);
-    free(request.data.register_application->connection_password);
-    free(request.data.register_application->command_password);
 }
 
 void unregister_connection(acc_client_t *client) {

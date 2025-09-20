@@ -28,22 +28,22 @@ void acc_write_float(char *buffer, size_t *offset, float data) {
     acc_write_type(buffer, offset, &data, sizeof(float));
 }
 
-void acc_write_string(char *buffer, size_t *offset, string_t *string) {
-    if (string == NULL || string->size == 0) {
+void acc_write_string(char *buffer, size_t *offset, string_t string) {
+    if (string.size == 0) {
         acc_write_uint16_t(buffer, offset, 0);
     } else {
-        acc_write_uint16_t(buffer, offset, (uint16_t)string->size);
-        acc_write_type(buffer, offset, string->data, string->size);
+        acc_write_uint16_t(buffer, offset, (uint16_t)string.size);
+        acc_write_type(buffer, offset, string.data, string.size);
     }
 }
 
 int32_t acc_write_register_application(char **buffer, size_t *total, acc_reg_app_t *reg_app) {
-    (*total) += sizeof(uint8_t);                                       // 1. Request Type
-    (*total) += sizeof(uint8_t);                                       // 2. Broadcasting Version
-    (*total) += sizeof(uint16_t) + reg_app->display_name->size;        // 3. Display Name
-    (*total) += sizeof(uint16_t) + reg_app->connection_password->size; // 4. Connection Password
-    (*total) += sizeof(int32_t);                                       // 5. Update Interval
-    (*total) += sizeof(uint16_t) + reg_app->command_password->size;    // 6. Command Password
+    (*total) += sizeof(uint8_t);                                      // 1. Request Type
+    (*total) += sizeof(uint8_t);                                      // 2. Broadcasting Version
+    (*total) += sizeof(uint16_t) + reg_app->display_name.size;        // 3. Display Name
+    (*total) += sizeof(uint16_t) + reg_app->connection_password.size; // 4. Connection Password
+    (*total) += sizeof(int32_t);                                      // 5. Update Interval
+    (*total) += sizeof(uint16_t) + reg_app->command_password.size;    // 6. Command Password
 
     *buffer = malloc(*total);
     if (*buffer == NULL) {
@@ -126,9 +126,9 @@ int32_t acc_write_request_track_data(char **buffer, size_t *total, acc_req_track
 }
 
 int32_t acc_write_change_hud_page(char **buffer, size_t *total, acc_change_hud_page_t *change_hud_page) {
-    (*total) += sizeof(uint8_t);                                    // 1. Request Type
-    (*total) += sizeof(int32_t);                                    // 2. Connection ID
-    (*total) += sizeof(uint16_t) + change_hud_page->hud_page->size; // 3. HUD Page
+    (*total) += sizeof(uint8_t);                                   // 1. Request Type
+    (*total) += sizeof(int32_t);                                   // 2. Connection ID
+    (*total) += sizeof(uint16_t) + change_hud_page->hud_page.size; // 3. HUD Page
 
     *buffer = malloc(*total);
     if (*buffer == NULL) {
@@ -148,8 +148,8 @@ int32_t acc_write_change_hud_page(char **buffer, size_t *total, acc_change_hud_p
 }
 
 int32_t acc_write_change_focus(char **buffer, size_t *total, acc_change_focus_t *change_focus) {
-    bool has_car_index = change_focus->car_index != NULL;
-    bool has_cameras = change_focus->camera_set != NULL || change_focus->camera != NULL;
+    bool has_car_index = change_focus->car_index >= 0;
+    bool has_cameras = change_focus->camera_set.size > 0 || change_focus->camera.size > 0;
 
     (*total) += sizeof(uint8_t); // 1. Request Type
     (*total) += sizeof(int32_t); // 2. Connection ID
@@ -160,10 +160,10 @@ int32_t acc_write_change_focus(char **buffer, size_t *total, acc_change_focus_t 
 
     (*total) += sizeof(uint8_t); // 4.1. Camera Indicator
     if (has_cameras) {
-        (*total) += sizeof(uint16_t) + change_focus->camera_set->size; // 4.2. Camera Set
+        (*total) += sizeof(uint16_t) + change_focus->camera_set.size; // 4.2. Camera Set
     }
     if (has_cameras) {
-        (*total) += sizeof(uint16_t) + change_focus->camera->size; // 4.3. Camera
+        (*total) += sizeof(uint16_t) + change_focus->camera.size; // 4.3. Camera
     }
 
     *buffer = malloc(*total);
@@ -177,7 +177,7 @@ int32_t acc_write_change_focus(char **buffer, size_t *total, acc_change_focus_t 
 
     acc_write_uint8_t(*buffer, &offset, has_car_index ? 1 : 0);
     if (has_car_index) {
-        acc_write_uint16_t(*buffer, &offset, *change_focus->car_index);
+        acc_write_uint16_t(*buffer, &offset, (uint16_t)change_focus->car_index);
     }
 
     acc_write_uint8_t(*buffer, &offset, has_cameras ? 1 : 0);
@@ -194,13 +194,13 @@ int32_t acc_write_change_focus(char **buffer, size_t *total, acc_change_focus_t 
 }
 
 int32_t acc_write_instant_replay_request(char **buffer, size_t *total, acc_req_instant_replay_t *req_instant_replay) {
-    (*total) += sizeof(uint8_t);                                                 // 1. Request Type
-    (*total) += sizeof(int32_t);                                                 // 2. Connection ID
-    (*total) += sizeof(float);                                                   // 3. Start Session Time
-    (*total) += sizeof(float);                                                   // 4. Duration
-    (*total) += sizeof(int32_t);                                                 // 5. Car Index Indicator
-    (*total) += sizeof(uint16_t) + req_instant_replay->initial_camera_set->size; // 6. Initial Camera Set
-    (*total) += sizeof(uint16_t) + req_instant_replay->initial_camera->size;     // 7. Initial Camera
+    (*total) += sizeof(uint8_t);                                                // 1. Request Type
+    (*total) += sizeof(int32_t);                                                // 2. Connection ID
+    (*total) += sizeof(float);                                                  // 3. Start Session Time
+    (*total) += sizeof(float);                                                  // 4. Duration
+    (*total) += sizeof(int32_t);                                                // 5. Car Index Indicator
+    (*total) += sizeof(uint16_t) + req_instant_replay->initial_camera_set.size; // 6. Initial Camera Set
+    (*total) += sizeof(uint16_t) + req_instant_replay->initial_camera.size;     // 7. Initial Camera
 
     *buffer = malloc(*total);
     if (*buffer == NULL) {

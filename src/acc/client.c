@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../utils/udp_socket.c"
 #include "./reader.c"
 #include "./writer.c"
-#include "../utils/udp_socket.c"
 
 #define ACC_RECEIVE_BUFFER_SIZE 1024 * 100
 
@@ -18,6 +18,11 @@ int32_t acc_get_last_error(void) { return acc_last_error; }
 typedef struct ACClient {
     udp_socket_t *socket;
 } acc_client_t;
+
+acc_client_t *acc_client_create(char *address, uint16_t port);
+bool acc_client_destroy(acc_client_t *client);
+bool acc_client_send(acc_client_t *client, acc_server_request_t *request);
+bool acc_client_receive(acc_client_t *client, acc_server_response_t *response);
 
 acc_client_t *acc_client_create(char *address, uint16_t port) {
     acc_client_t *client = malloc(sizeof(acc_client_t));
@@ -83,7 +88,7 @@ bool acc_client_send(acc_client_t *client, acc_server_request_t *request) {
         status = acc_write_request_track_data(&buffer, &total, request->data.request_track_data);
         break;
     case ACC_OUTBOUND_MESSAGE_CHANGE_HUD_PAGE:
-        status = acc_write_change_hud_page(&buffer, &total, request->data.request_hud_page);
+        status = acc_write_change_hud_page(&buffer, &total, request->data.change_hud_page);
         break;
     case ACC_OUTBOUND_MESSAGE_CHANGE_FOCUS:
         status = acc_write_change_focus(&buffer, &total, request->data.change_focus);
