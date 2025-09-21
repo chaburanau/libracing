@@ -191,13 +191,14 @@ typedef enum {
     IRACING_FLAGS_FURLED = 0x00080000,
     IRACING_FLAGS_REPAIR = 0x00100000,
     IRACING_FLAGS_DISQUALIFY_SCORING_DISABLED = 0x00200000, // Car is disqualified and scoring is disabled
-
-    // Start lights
-    IRACING_FLAGS_START_HIDDEN = 0x10000000,
-    IRACING_FLAGS_START_READY = 0x20000000,
-    IRACING_FLAGS_START_SET = 0x40000000,
-    IRACING_FLAGS_START_GO = 0x80000000,
 } iracing_flags;
+
+// Start lights
+// Numbers below are too big for `int` type, so defining them separately
+#define IRACING_FLAGS_START_HIDDEN = 0x10000000
+#define IRACING_FLAGS_START_READY = 0x20000000
+#define IRACING_FLAGS_START_SET = 0x40000000
+#define IRACING_FLAGS_START_GO = 0x80000000
 
 typedef enum {
     IRACING_CAMERA_STATE_IS_SESSION_SCREEN = 0x0001, // The camera tool can only be activated if viewing the session screen
@@ -241,7 +242,7 @@ typedef struct {
 } iracing_variable_buffer_t;
 
 typedef struct {
-    int32_t type;                  // Iracing_variable_type_t
+    int32_t type;                  // iracing_variable_type_t
     int32_t offset;                // Offset from start of buffer row
     int32_t count;                 // Number of entries so length in bytes would be iracing_variable_type_t[type] * count
     bool as_time;                  // Flag to consider the value as time
@@ -249,11 +250,11 @@ typedef struct {
     char name[IRACING_MAX_STRING]; // Human-readable name of the variable
     char desc[IRACING_MAX_DESC];   // Human-readable description of the variable
     char unit[IRACING_MAX_STRING]; // Units value is measured on, something like "kg/m^2"
-} iracing_variable_header_t;
+} iracing_variable_info_t;
 
 typedef struct {
     int32_t version; // Session info version
-    string_t *data;  // YAML formatted session info data
+    string_t data;   // YAML formatted session info data
 } iracing_session_info_t;
 
 typedef struct {
@@ -263,13 +264,13 @@ typedef struct {
     int32_t tick_rate; // Ticks per second (60 or 360 etc)
 
     // Session information, updated periodicaly
-    int32_t session_info_update; // Incremented when session info changes
-    int32_t session_info_length; // Length in bytes of session info string
-    int32_t session_info_offset; // Session info, encoded in YAML format
+    int32_t session_info_version; // Incremented when session info changes
+    int32_t session_info_length;  // Length in bytes of session info string
+    int32_t session_info_offset;  // Session info, encoded in YAML format
 
     // State data, output at tick rate
-    int32_t number_of_variables;     // Length of array pointed to by varHeaderOffset
-    int32_t variables_header_offset; // Offset to iracing_variable_header_t array
+    int32_t number_of_variables;   // Length of array pointed to by varHeaderOffset
+    int32_t variables_info_offset; // Offset to iracing_variable_info_t array
 
     int32_t number_of_buffers;                                       // <= IRACING_MAX_BUFFERS (3 for now)
     int32_t buffer_length;                                           // Length in bytes for one line

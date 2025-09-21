@@ -1,120 +1,183 @@
 #include <stddef.h>
+#include <stdlib.h>
 #include <windows.h>
 
 #include "./types.c"
+#include "./utils.c"
 
-#define IRACING_MEM_MAP_FILE_NAME "Local\\IRSDKMemMapFileName"
+static int32_t iracing_last_error = 0;
+int32_t iracing_get_last_error(void) { return iracing_last_error; }
 
-typedef struct iRacingClient {
+typedef struct {
     HANDLE file_handle;
-    char *shared_memory;
-    iracing_header_t header;
+    HANDLE event_handle;
+    char *memory;
 } iracing_client_t;
 
-iracing_client_t *iracing_connect() {
-    iracing_client_t *client = malloc(sizeof(iracing_client_t));
+// --
+
+bool iracing_client_init(iracing_client_t *client);
+bool iracing_client_free(iracing_client_t *client);
+
+bool iracing_read_header(iracing_client_t *client, iracing_header_t *header);
+bool iracing_read_session_info(iracing_client_t *client, iracing_header_t *header, iracing_session_info_t *session_info);
+bool iracing_read_variable_info(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, size_t index);
+bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void *value);
+
+// --
+
+bool iracing_client_init(iracing_client_t *client) {
     if (client == NULL) {
-        return NULL;
+        iracing_last_error = -1;
+        return false;
     }
 
     client->file_handle = OpenFileMapping(FILE_MAP_READ, FALSE, IRACING_MEM_MAP_FILE_NAME);
     if (client->file_handle == NULL) {
-        iracing_disconnect(client);
-        return NULL;
+        iracing_client_free(client);
+        iracing_last_error = (int32_t)GetLastError();
+        return false;
     }
 
-    client->shared_memory = (char *)MapViewOfFile(client->file_handle, FILE_MAP_READ, 0, 0, 0);
-    if (client->file_handle == NULL) {
-        iracing_disconnect(client);
-        return NULL;
+    client->event_handle = OpenEvent(SYNCHRONIZE, false, IRACING_DATA_VALID_EVENT_NAME);
+    if (client->event_handle == NULL) {
+        iracing_client_free(client);
+        iracing_last_error = (int32_t)GetLastError();
+        return false;
     }
 
-    return client;
+    client->memory = (char *)MapViewOfFile(client->file_handle, FILE_MAP_READ, 0, 0, 0);
+    if (client->memory == NULL) {
+        iracing_client_free(client);
+        iracing_last_error = (int32_t)GetLastError();
+        return false;
+    }
+
+    return true;
 }
 
-void iracing_disconnect(iracing_client_t *client) {
+bool iracing_client_free(iracing_client_t *client) {
     if (client == NULL) {
-        return;
+        iracing_last_error = -1;
+        return false;
     }
 
-    if (client->shared_memory != NULL) {
-        UnmapViewOfFile(client->shared_memory);
-        client->shared_memory = NULL;
+    if (client->memory != NULL) {
+        bool success = UnmapViewOfFile(client->memory);
+        if (!success) {
+            iracing_last_error = (int32_t)GetLastError();
+        }
+    }
+
+    if (client->event_handle != NULL) {
+        bool success = CloseHandle(client->event_handle);
+        if (!success) {
+            iracing_last_error = (int32_t)GetLastError();
+        }
     }
 
     if (client->file_handle != NULL) {
-        CloseHandle(client->file_handle);
-        client->file_handle = NULL;
+        bool success = CloseHandle(client->file_handle);
+        if (!success) {
+            iracing_last_error = (int32_t)GetLastError();
+        }
     }
 
-    free(client);
+    client->memory = NULL;
+    client->event_handle = NULL;
+    client->file_handle = NULL;
+
+    return true;
 }
 
-iracing_header_t iracing_get_header(iracing_client_t *client) {
-    iracing_header_t header;
+bool iracing_read_header(iracing_client_t *client, iracing_header_t *header) {
     if (client == NULL) {
-        return header;
+        iracing_last_error = -1;
+        return false;
     }
 
-    memcpy(&header, client->shared_memory, sizeof(iracing_header_t));
-    client->header = header;
-    return header;
+    memcpy(header, client->memory, sizeof(iracing_header_t));
+    return true;
 }
 
-iracing_session_info_t iracing_get_session_info(iracing_client_t *client) {
-    iracing_session_info_t session_info;
+bool iracing_read_session_info(iracing_client_t *client, iracing_header_t *header, iracing_session_info_t *session_info) {
     if (client == NULL) {
-        return session_info;
+        iracing_last_error = -1;
+        return false;
+    }
+    if (header == NULL) {
+        iracing_last_error = -2;
+        return false;
     }
 
-    int32_t offset = client->header.session_info_offset;
-    memcpy(&session_info, client->shared_memory + offset, sizeof(iracing_session_info_t));
-    return session_info;
+    int32_t version = header->session_info_version;
+    int32_t offset = header->session_info_offset;
+    int32_t length = header->session_info_length;
+
+    session_info->version = version;
+    session_info->data.size = (size_t)length;
+    session_info->data.data = malloc((size_t)length);
+
+    if (session_info->data.data == NULL) {
+        iracing_last_error = -10;
+        return false;
+    }
+
+    memcpy(session_info->data.data, client->memory + offset, (size_t)length);
+    return true;
 }
 
-iracing_variable_header_t iracing_get_variable_header(iracing_client_t *client, int32_t index) {
-    iracing_variable_header_t variable_header;
+bool iracing_read_variable_info(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, size_t index) {
     if (client == NULL) {
-        return variable_header;
+        iracing_last_error = -1;
+        return false;
+    }
+    if (header == NULL) {
+        iracing_last_error = -2;
+        return false;
+    }
+    if (info == NULL) {
+        iracing_last_error = -3;
+        return false;
+    }
+    if (index >= (size_t)header->number_of_variables) {
+        iracing_last_error = -20;
+        return false;
     }
 
-    int32_t offset = client->header.variables_header_offset + index * sizeof(iracing_variable_header_t);
-    memcpy(&variable_header, client->shared_memory + offset, sizeof(iracing_variable_header_t));
-    return variable_header;
+    size_t length = sizeof(iracing_variable_info_t);
+    size_t offset = (size_t)header->variables_info_offset + (length * index);
+
+    memcpy(info, client->memory + offset, length);
+    return true;
 }
 
-char iracing_get_char_variable(iracing_client_t *client, int offset) {
-    char data;
-    memcpy(&data, client->shared_memory + offset, sizeof(char));
-    return data;
+bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void *value) {
+    if (client == NULL) {
+        iracing_last_error = -1;
+        return false;
+    }
+    if (header == NULL) {
+        iracing_last_error = -2;
+        return false;
+    }
+    if (info == NULL) {
+        iracing_last_error = -3;
+        return false;
+    }
+
+    size_t index = iracing_get_latest_tick(header);
+    size_t length = iracing_variable_size(info->type) * (size_t)info->count;
+    size_t offset = (size_t)(header->variable_buffers[index].offset + info->offset);
+
+    value = malloc(length);
+    if (value == NULL) {
+        iracing_last_error = -10;
+        return false;
+    }
+
+    memcpy(value, client->memory + offset, length);
+    return true;
 }
 
-bool iracing_get_bool_variable(iracing_client_t *client, int offset) {
-    bool data;
-    memcpy(&data, client->shared_memory + offset, sizeof(bool));
-    return data;
-}
-
-int32_t iracing_get_int_variable(iracing_client_t *client, int offset) {
-    int32_t data;
-    memcpy(&data, client->shared_memory + offset, sizeof(int32_t));
-    return data;
-}
-
-int32_t iracing_get_bitfield_variable(iracing_client_t *client, int offset) {
-    int32_t data;
-    memcpy(&data, client->shared_memory + offset, sizeof(int32_t));
-    return data;
-}
-
-float iracing_get_float_variable(iracing_client_t *client, int offset) {
-    float data;
-    memcpy(&data, client->shared_memory + offset, sizeof(float));
-    return data;
-}
-
-double iracing_get_double_variable(iracing_client_t *client, int offset) {
-    double data;
-    memcpy(&data, client->shared_memory + offset, sizeof(double));
-    return data;
-}
+// --
