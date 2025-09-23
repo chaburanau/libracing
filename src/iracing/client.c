@@ -28,7 +28,7 @@ bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *hea
 
 bool iracing_client_init(iracing_client_t *client) {
     if (client == NULL) {
-        iracing_last_error = -1;
+        iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
     }
 
@@ -58,7 +58,7 @@ bool iracing_client_init(iracing_client_t *client) {
 
 bool iracing_client_free(iracing_client_t *client) {
     if (client == NULL) {
-        iracing_last_error = -1;
+        iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
     }
 
@@ -92,7 +92,7 @@ bool iracing_client_free(iracing_client_t *client) {
 
 bool iracing_read_header(iracing_client_t *client, iracing_header_t *header) {
     if (client == NULL) {
-        iracing_last_error = -1;
+        iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
     }
 
@@ -102,11 +102,11 @@ bool iracing_read_header(iracing_client_t *client, iracing_header_t *header) {
 
 bool iracing_read_session_info(iracing_client_t *client, iracing_header_t *header, iracing_session_info_t *session_info) {
     if (client == NULL) {
-        iracing_last_error = -1;
+        iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
     }
     if (header == NULL) {
-        iracing_last_error = -2;
+        iracing_last_error = IRACING_STATUS_HEADER_NOT_INITIALIZED;
         return false;
     }
 
@@ -119,7 +119,7 @@ bool iracing_read_session_info(iracing_client_t *client, iracing_header_t *heade
     session_info->data.data = malloc((size_t)length);
 
     if (session_info->data.data == NULL) {
-        iracing_last_error = -10;
+        iracing_last_error = IRACING_STATUS_ALLOCATION_FAILED;
         return false;
     }
 
@@ -129,19 +129,19 @@ bool iracing_read_session_info(iracing_client_t *client, iracing_header_t *heade
 
 bool iracing_read_variable_info(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, size_t index) {
     if (client == NULL) {
-        iracing_last_error = -1;
+        iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
     }
     if (header == NULL) {
-        iracing_last_error = -2;
+        iracing_last_error = IRACING_STATUS_HEADER_NOT_INITIALIZED;
         return false;
     }
     if (info == NULL) {
-        iracing_last_error = -3;
+        iracing_last_error = IRACING_STATUS_INFO_NOT_INITIALIZED;
         return false;
     }
     if (index >= (size_t)header->number_of_variables) {
-        iracing_last_error = -20;
+        iracing_last_error = IRACING_STATUS_ALLOCATION_FAILED;
         return false;
     }
 
@@ -154,15 +154,15 @@ bool iracing_read_variable_info(iracing_client_t *client, iracing_header_t *head
 
 bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void *value) {
     if (client == NULL) {
-        iracing_last_error = -1;
+        iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
     }
     if (header == NULL) {
-        iracing_last_error = -2;
+        iracing_last_error = IRACING_STATUS_HEADER_NOT_INITIALIZED;
         return false;
     }
     if (info == NULL) {
-        iracing_last_error = -3;
+        iracing_last_error = IRACING_STATUS_INFO_NOT_INITIALIZED;
         return false;
     }
 
@@ -172,7 +172,7 @@ bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *hea
 
     value = malloc(length);
     if (value == NULL) {
-        iracing_last_error = -10;
+        iracing_last_error = IRACING_STATUS_ALLOCATION_FAILED;
         return false;
     }
 
