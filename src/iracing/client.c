@@ -22,7 +22,7 @@ bool iracing_client_free(iracing_client_t *client);
 bool iracing_read_header(iracing_client_t *client, iracing_header_t *header);
 bool iracing_read_session_info(iracing_client_t *client, iracing_header_t *header, iracing_session_info_t *session_info);
 bool iracing_read_variable_info(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, size_t index);
-bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void *value);
+bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void **value);
 
 // --
 
@@ -152,7 +152,7 @@ bool iracing_read_variable_info(iracing_client_t *client, iracing_header_t *head
     return true;
 }
 
-bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void *value) {
+bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *header, iracing_variable_info_t *info, void **value) {
     if (client == NULL) {
         iracing_last_error = IRACING_STATUS_CLIENT_NOT_INITIALIZED;
         return false;
@@ -170,13 +170,13 @@ bool iracing_read_variable_value(iracing_client_t *client, iracing_header_t *hea
     size_t length = iracing_variable_size(info->type) * (size_t)info->count;
     size_t offset = (size_t)(header->variable_buffers[index].offset + info->offset);
 
-    value = malloc(length);
-    if (value == NULL) {
+    *value = malloc(length);
+    if (*value == NULL) {
         iracing_last_error = IRACING_STATUS_ALLOCATION_FAILED;
         return false;
     }
 
-    memcpy(value, client->memory + offset, length);
+    memcpy(*value, client->memory + offset, length);
     return true;
 }
 

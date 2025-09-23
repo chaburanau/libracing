@@ -28,18 +28,18 @@ typedef enum {
 typedef enum {
     // 1 byte
     IRACING_TYPE_CHAR = 0,
-    IRACING_TYPE_BOOL,
+    IRACING_TYPE_BOOL = 1,
 
     // 4 bytes
-    IRACING_TYPE_INT,
-    IRACING_TYPE_BITFIELD,
-    IRACING_TYPE_FLOAT,
+    IRACING_TYPE_INT = 2,
+    IRACING_TYPE_BITFIELD = 3,
+    IRACING_TYPE_FLOAT = 4,
 
     // 8 bytes
-    IRACING_TYPE_DOUBLE,
+    IRACING_TYPE_DOUBLE = 5,
 
     // index, don't use
-    IRACING_TYPE_ETCOUNT,
+    IRACING_TYPE_ETCOUNT = 6,
 } iracing_variable_type_t;
 
 typedef enum {
@@ -278,7 +278,7 @@ typedef struct {
     int32_t session_info_offset;  // Session info, encoded in YAML format
 
     // State data, output at tick rate
-    int32_t number_of_variables;   // Length of array pointed to by varHeaderOffset
+    int32_t number_of_variables;   // Length of array pointed to by variables_info_offset
     int32_t variables_info_offset; // Offset to iracing_variable_info_t array
 
     int32_t number_of_buffers;                                       // <= IRACING_MAX_BUFFERS (3 for now)
